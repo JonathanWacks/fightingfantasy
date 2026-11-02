@@ -73,8 +73,11 @@ function toSsml(text) {
 function slotValue(handlerInput, name) {
   const slot = Alexa.getSlot(handlerInput.requestEnvelope, name);
   if (!slot) return null;
-  const resolved = slot.resolutions?.resolutionsPerAuthority?.[0];
-  if (resolved?.status?.code === 'ER_SUCCESS_MATCH') return resolved.values[0].value.id || resolved.values[0].value.name;
+  const authorities = (slot.resolutions && slot.resolutions.resolutionsPerAuthority) || [];
+  const resolved = authorities[0];
+  if (resolved && resolved.status && resolved.status.code === 'ER_SUCCESS_MATCH') {
+    return resolved.values[0].value.id || resolved.values[0].value.name;
+  }
   return slot.value || null;
 }
 
