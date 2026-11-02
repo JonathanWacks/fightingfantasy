@@ -31,31 +31,34 @@ function buildPersistenceAdapter() {
   return null;
 }
 
-async function loadState(handlerInput) {
+function loadState(handlerInput) {
   const am = handlerInput.attributesManager;
   const session = am.getSessionAttributes();
-  if (session[STATE_KEY] !== undefined) return session[STATE_KEY];
-  let state = null;
-  try {
-    const persistent = await am.getPersistentAttributes();
-    state = persistent[STATE_KEY] || null;
-  } catch (err) {
-    // No adapter configured, or the store is unreachable: play without saving.
-  }
-  session[STATE_KEY] = state;
-  am.setSessionAttributes(session);
-  return state;
+  if (session[STATE_KEY] !== undefined) return Promise.resolve(session[STATE_KEY]);
+  return Promise.resolve()
+    .then(() => am.getPersistentAttributes())
+    .then((persistent) => (persistent && persistent[STATE_KEY]) || null)
+    .catch(() => null) // no adapter configured, or the store is unreachable: play without saving
+    .then((state) => {
+      session[STATE_KEY] = state;
+      am.setSessionAttributes(session);
+      return state;
+    });
 }
 
-async function saveState(handlerInput, state) {
+function saveState(handlerInput, state) {
   const am = handlerInput.attributesManager;
-  am.setSessionAttributes({ ...am.getSessionAttributes(), [STATE_KEY]: state });
-  try {
-    am.setPersistentAttributes({ [STATE_KEY]: state });
-    await am.savePersistentAttributes();
-  } catch (err) {
-    // Persistence not configured; the session still holds the game.
-  }
+  const session = am.getSessionAttributes();
+  session[STATE_KEY] = state;
+  am.setSessionAttributes(session);
+  return Promise.resolve()
+    .then(() => {
+      const persistent = {};
+      persistent[STATE_KEY] = state;
+      am.setPersistentAttributes(persistent);
+      return am.savePersistentAttributes();
+    })
+    .catch(() => {}); // persistence not configured; the session still holds the game
 }
 
 // ---------- speech ----------
@@ -128,20 +131,26 @@ const GameHandler = {
     const type = Alexa.getRequestType(handlerInput.requestEnvelope);
     return type === 'LaunchRequest' || type === 'IntentRequest';
   },
-  async handle(handlerInput) {
+  handle(handlerInput) {
     const action = toAction(handlerInput);
-    const state = await loadState(handlerInput);
-    const result = handle(state, action);
-    await saveState(handlerInput, result.state);
-
-    const rb = handlerInput.responseBuilder
-      .speak(toSsml(result.speech))
-      .withSimpleCard(adventure.title, result.speech.replace(/\n\n/g, '\n'));
-    if (!result.shouldEnd) rb.reprompt(toSsml(result.reprompt));
-    else rb.withShouldEndSession(true);
-    return rb.getResponse();
+    let result;
+    return loadState(handlerInput)
+      .then((state) => {
+        result = handle(state, action);
+        return saveState(handlerInput, result.state);
+      })
+      .then(() => respondWith(handlerInput, result));
   },
 };
+
+function respondWith(handlerInput, result) {
+  const rb = handlerInput.responseBuilder
+    .speak(toSsml(result.speech))
+    .withSimpleCard(adventure.title, result.speech.replace(/\n\n/g, '\n'));
+  if (!result.shouldEnd) rb.reprompt(toSsml(result.reprompt));
+  else rb.withShouldEndSession(true);
+  return rb.getResponse();
+}
 
 const SessionEndedRequestHandler = {
   canHandle(handlerInput) {

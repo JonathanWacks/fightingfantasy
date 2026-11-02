@@ -196,7 +196,7 @@ function createEngine(adventure = defaultAdventure) {
       out.push(
         s.combat.enemies.length > 1
           ? `Your foes: ${s.combat.enemies.map(enemyIntro).join(' ')}`
-          : enemyIntro(first),
+          : enemyIntro(first)
       );
     } else if (sec.testLuck) {
       s.phase = 'test';
@@ -418,7 +418,7 @@ function createEngine(adventure = defaultAdventure) {
   function inProgress(s) {
     return Boolean(
       s && s.v === STATE_VERSION && s.phase && !['dead', 'won'].includes(s.phase) &&
-        (s.section == null || section(s.section)),
+        (s.section == null || section(s.section))
     );
   }
 
@@ -574,4 +574,4 @@ function createEngine(adventure = defaultAdventure) {
   return { handle, prompt, visibleChoices, newCharacter, enter, STATE_VERSION };
 }
 
-module.exports = { createEngine, ...createEngine() };
+module.exports = Object.assign({ createEngine: createEngine }, createEngine());
