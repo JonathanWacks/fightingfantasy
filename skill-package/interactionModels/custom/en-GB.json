@@ -1,0 +1,196 @@
+{
+  "interactionModel": {
+    "languageModel": {
+      "invocationName": "ashen tor",
+      "intents": [
+        {
+          "name": "ChooseOptionIntent",
+          "slots": [{ "name": "number", "type": "AMAZON.NUMBER" }],
+          "samples": [
+            "{number}",
+            "option {number}",
+            "number {number}",
+            "choice {number}",
+            "choose {number}",
+            "choose option {number}",
+            "I choose {number}",
+            "I'll choose {number}",
+            "pick {number}",
+            "I pick {number}",
+            "go with {number}",
+            "I'll go with {number}",
+            "let's go with {number}",
+            "option number {number}",
+            "I'll take option {number}",
+            "turn to {number}"
+          ]
+        },
+        {
+          "name": "ChoosePotionIntent",
+          "slots": [{ "name": "potion", "type": "PotionType" }],
+          "samples": [
+            "{potion}",
+            "the {potion} potion",
+            "potion of {potion}",
+            "the potion of {potion}",
+            "I'll take the potion of {potion}",
+            "I'll take {potion}",
+            "I want {potion}",
+            "I choose {potion}",
+            "give me {potion}",
+            "{potion} please"
+          ]
+        },
+        {
+          "name": "AttackIntent",
+          "slots": [],
+          "samples": [
+            "attack",
+            "attack it",
+            "attack again",
+            "fight",
+            "fight on",
+            "fight it",
+            "keep fighting",
+            "strike",
+            "hit it",
+            "swing my sword",
+            "charge",
+            "kill it",
+            "another round"
+          ]
+        },
+        {
+          "name": "EscapeIntent",
+          "slots": [],
+          "samples": ["escape", "run away", "flee", "run", "retreat", "get out of here", "try to escape"]
+        },
+        {
+          "name": "TestLuckIntent",
+          "slots": [],
+          "samples": [
+            "test my luck",
+            "test luck",
+            "test your luck",
+            "use my luck",
+            "use luck",
+            "try my luck",
+            "luck",
+            "I'll test my luck",
+            "feeling lucky"
+          ]
+        },
+        {
+          "name": "EatIntent",
+          "slots": [],
+          "samples": [
+            "eat",
+            "eat a meal",
+            "eat provisions",
+            "eat some food",
+            "have a meal",
+            "have something to eat",
+            "eat something",
+            "use provisions",
+            "take a meal"
+          ]
+        },
+        {
+          "name": "DrinkPotionIntent",
+          "slots": [],
+          "samples": [
+            "drink potion",
+            "drink my potion",
+            "drink the potion",
+            "use potion",
+            "use my potion",
+            "take a dose",
+            "take my potion",
+            "quaff my potion"
+          ]
+        },
+        {
+          "name": "StatusIntent",
+          "slots": [],
+          "samples": [
+            "status",
+            "stats",
+            "my stats",
+            "check my stats",
+            "how am I doing",
+            "what's my stamina",
+            "what is my stamina",
+            "what are my scores",
+            "character sheet",
+            "how healthy am I"
+          ]
+        },
+        {
+          "name": "InventoryIntent",
+          "slots": [],
+          "samples": [
+            "inventory",
+            "check inventory",
+            "what am I carrying",
+            "what do I have",
+            "check my backpack",
+            "what's in my backpack",
+            "my items",
+            "how much gold do I have",
+            "how many provisions do I have"
+          ]
+        },
+        {
+          "name": "RollAgainIntent",
+          "slots": [],
+          "samples": ["roll again", "reroll", "re roll", "roll a new character", "roll new scores", "try again"]
+        },
+        {
+          "name": "NewGameIntent",
+          "slots": [],
+          "samples": ["new game", "start a new game", "new adventure", "start a new adventure", "restart", "begin again"]
+        },
+        {
+          "name": "ContinueIntent",
+          "slots": [],
+          "samples": [
+            "continue",
+            "go on",
+            "carry on",
+            "keep going",
+            "proceed",
+            "move on",
+            "resume",
+            "roll",
+            "roll the dice",
+            "roll dice",
+            "test my skill",
+            "begin",
+            "onward"
+          ]
+        },
+        { "name": "AMAZON.YesIntent", "samples": [] },
+        { "name": "AMAZON.NoIntent", "samples": [] },
+        { "name": "AMAZON.RepeatIntent", "samples": ["say that again", "what were my options", "what are my choices"] },
+        { "name": "AMAZON.HelpIntent", "samples": ["how do I play", "what are the rules", "explain the rules"] },
+        { "name": "AMAZON.StartOverIntent", "samples": [] },
+        { "name": "AMAZON.NextIntent", "samples": [] },
+        { "name": "AMAZON.StopIntent", "samples": [] },
+        { "name": "AMAZON.CancelIntent", "samples": [] },
+        { "name": "AMAZON.NavigateHomeIntent", "samples": [] },
+        { "name": "AMAZON.FallbackIntent", "samples": [] }
+      ],
+      "types": [
+        {
+          "name": "PotionType",
+          "values": [
+            { "id": "skill", "name": { "value": "skill", "synonyms": ["skills", "dexterity"] } },
+            { "id": "strength", "name": { "value": "strength", "synonyms": ["stamina", "health", "healing"] } },
+            { "id": "fortune", "name": { "value": "fortune", "synonyms": ["good fortune"] } }
+          ]
+        }
+      ]
+    }
+  },
+  "version": "1"
+}

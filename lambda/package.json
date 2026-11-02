@@ -1,0 +1,21 @@
+{
+  "name": "beneath-ashen-tor",
+  "version": "1.0.0",
+  "description": "A voice gamebook adventure for Alexa: roll your skill, stamina and luck, fight monsters, and choose your path.",
+  "main": "index.js",
+  "license": "MIT",
+  "private": true,
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node validate.js && node --test test/*.test.js",
+    "play": "node play.js",
+    "validate": "node validate.js"
+  },
+  "dependencies": {
+    "ask-sdk-core": "^2.14.0",
+    "ask-sdk-model": "^1.86.0",
+    "ask-sdk-s3-persistence-adapter": "^2.14.0"
+  }
+}

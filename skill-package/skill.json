@@ -1,0 +1,42 @@
+{
+  "manifest": {
+    "publishingInformation": {
+      "locales": {
+        "en-GB": {
+          "name": "Beneath Ashen Tor",
+          "summary": "A dice-rolling gamebook adventure you play by voice.",
+          "description": "Roll your skill, stamina and luck, then descend beneath Ashen Tor to recover the Dawnstone from the necromancer Malgrath. Choose your path, fight monsters round by round, test your luck, and manage your provisions and potion. Your game is saved as you play.",
+          "examplePhrases": ["Alexa, open ashen tor", "attack", "test my luck"],
+          "keywords": ["adventure", "gamebook", "fantasy", "dice", "role playing", "choose your own adventure"]
+        },
+        "en-US": {
+          "name": "Beneath Ashen Tor",
+          "summary": "A dice-rolling gamebook adventure you play by voice.",
+          "description": "Roll your skill, stamina and luck, then descend beneath Ashen Tor to recover the Dawnstone from the necromancer Malgrath. Choose your path, fight monsters round by round, test your luck, and manage your provisions and potion. Your game is saved as you play.",
+          "examplePhrases": ["Alexa, open ashen tor", "attack", "test my luck"],
+          "keywords": ["adventure", "gamebook", "fantasy", "dice", "role playing", "choose your own adventure"]
+        }
+      },
+      "isAvailableWorldwide": true,
+      "testingInstructions": "Say 'Alexa, open ashen tor'. Accept the rolled scores with 'yes', pick a potion ('strength'), then choose options by number. In fights say 'attack', 'test my luck' or 'escape'.",
+      "category": "GAMES",
+      "distributionMode": "PUBLIC",
+      "distributionCountries": []
+    },
+    "apis": {
+      "custom": {}
+    },
+    "manifestVersion": "1.0",
+    "privacyAndCompliance": {
+      "allowsPurchases": false,
+      "usesPersonalInfo": false,
+      "isChildDirected": false,
+      "isExportCompliant": true,
+      "containsAds": false,
+      "locales": {
+        "en-GB": {},
+        "en-US": {}
+      }
+    }
+  }
+}

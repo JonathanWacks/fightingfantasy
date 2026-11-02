@@ -1,0 +1,80 @@
+# Beneath Ashen Tor — a voice gamebook for Alexa
+
+An Alexa skill for playing a classic dice-and-paper style fantasy gamebook by voice. You roll **skill**, **stamina** and **luck**, pick a magic potion, then make your way beneath Ashen Tor to take the Dawnstone from the necromancer Malgrath. Along the way you fight monsters round by round, test your luck, eat provisions and collect items that open new paths.
+
+> "Alexa, open ashen tor"
+
+The adventure is original. The rules follow the familiar 1980s gamebook system.
+
+## How to play
+
+| Say | What happens |
+|---|---|
+| **yes** / **roll again** | Accept your rolled scores, or reroll them |
+| **skill**, **strength** or **fortune** | Choose your potion (two doses) |
+| **one**, **two**, **option three**… | Choose a path |
+| **continue** | Move on when there is only one way forward |
+| **attack** | Fight one combat round |
+| **test my luck** | In a test-your-luck section; or straight after a wound in combat to make your blow hurt more (or theirs hurt less) |
+| **escape** | Run from a fight, where that is allowed (costs 2 stamina) |
+| **eat** | Eat a meal: +4 stamina (not during a fight) |
+| **drink potion** | Use a dose of your potion |
+| **status** / **inventory** | Hear your scores, or what you're carrying |
+| **repeat**, **help**, **new game**, **stop** | Just what they say |
+
+**Rules:** skill is 1d6+6, stamina 2d6+12, luck 1d6+6. In each combat round, you and your foe each roll 2d6 and add your skill. The higher total wounds the other for 2 stamina. To test your luck (or skill), roll 2d6: a total at or under your score succeeds. Every luck test costs 1 luck. At 0 stamina, you die.
+
+Your game is saved after every turn. Next time you open the skill, it asks whether to carry on.
+
+## Deploy as an Alexa-hosted skill (free, no AWS account)
+
+1. Open the [Alexa developer console](https://developer.amazon.com/alexa/console/ask) and click **Create Skill**.
+2. Name it *Beneath Ashen Tor*. Choose **English (UK)** or **English (US)**, the **Custom** model and **Alexa-Hosted (Node.js)**.
+3. On the template page, choose **Import skill** and enter `https://github.com/JonathanWacks/fightingfantasy.git`.
+4. When it's created, open the **Build** tab and click **Build model**.
+5. In the **Test** tab, enable testing in *Development*. Then type or say "open ashen tor". The skill also works on any Echo signed in to the same Amazon account.
+
+Alexa-hosted skills come with an S3 bucket (`S3_PERSISTENCE_BUCKET`), which the skill uses automatically to save games. If you host on your own Lambda instead, set that environment variable to a bucket the function can write to, or set `DYNAMODB_PERSISTENCE_TABLE_NAME` and add `ask-sdk-dynamodb-persistence-adapter`. Without either, the game still works but only lasts one session.
+
+## Project layout
+
+```
+lambda/
+  index.js        Alexa request handlers (ASK SDK v2) and save/load
+  engine.js       the game rules — pure logic, no Alexa code
+  adventure.js    the story: numbered sections, choices, fights, tests
+  validate.js     checks the story for broken links and dead ends
+  play.js         play in a terminal using the same engine
+  test/           unit tests, random-bot playthroughs, Alexa request tests
+skill-package/
+  skill.json                          manifest
+  interactionModels/custom/*.json     voice model (en-GB, en-US)
+```
+
+## Develop locally
+
+```bash
+cd lambda
+npm install
+npm test        # validate the adventure + run all tests
+npm run play    # play in the terminal: type "1", "attack", "test my luck"…
+```
+
+## Writing your own adventure
+
+Edit `lambda/adventure.js`. Each section has `text`, optional `effects`, and **exactly one** of these:
+
+```js
+choices:   [{ text: 'open the gate', to: 18, requires: { item: 'silver key' } }]
+next:      23                                   // player says "continue"
+combat:    { enemies: [{ name: 'wraith', skill: 8, stamina: 7 }], win: 38, escape: 29 }
+testLuck:  { lucky: 31, unlucky: 32 }
+testSkill: { pass: 13, fail: 15 }
+ending:    'win' | 'death'
+```
+
+Effects: `{ stamina: -3 }`, `{ skill: 1, raiseInitial: true }`, `{ luck: 1 }`, `{ gold: 5 }`, `{ provisions: 2 }`, `{ addItem: 'rope' }`, `{ removeItem: 'holy water' }`, `{ setFlag: 'armoury' }`.
+
+Requirements: `item`, `gold`, `flag` and `notFlag`. A choice whose requirement isn't met is left out of what Alexa reads, and the remaining options are renumbered. Run `npm test` after editing. The validator flags missing sections, unreachable sections, and choice lists where every option has a requirement (which could leave the player stuck).
+
+Keep section text short. It is read aloud, and two to four sentences works best.
