@@ -12,9 +12,10 @@
  * - Alexa needs MP3 at 48 kbps and 16, 22.05 or 24 kHz, at most 240 seconds per response.
  */
 
-// Pinned to a tag so the CDN serves exactly these files. When you change the
-// sounds, push a new tag (e.g. sounds-v2) and update this line.
-const DEFAULT_BASE = 'https://cdn.jsdelivr.net/gh/JonathanWacks/fightingfantasy@sounds-v1/audio/';
+// Pinned to the commit that added these files, so the CDN serves exactly them.
+// When you change the sounds, commit and push, then put the new commit ID here
+// (a tag such as @sounds-v2 works too).
+const DEFAULT_BASE = 'https://cdn.jsdelivr.net/gh/JonathanWacks/fightingfantasy@98a667b83037cef8b6ffbddeaa6ddbe5f32ab9de/audio/';
 
 const SOUND_FILES = [
   'battle', 'bell', 'blast', 'clash', 'darts', 'death', 'door_creak', 'door_creak_long',

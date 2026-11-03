@@ -44,9 +44,9 @@ The story is read by a narrator voice: Amazon Polly's **Brian**, set by `narrato
 
 The engine plays sound effects on game events. For example, there's a drum roll before every luck or skill test, a chime when you're lucky, a swish and thud each combat round, a bugle when you win and a tolling bell when you die. Sections can add their own sound and mood.
 
-The sounds are MP3s in `audio/`. They're synthesised from scratch by `tools/make_sounds.py`, so they're original and free to use. They are served from the jsDelivr CDN, which mirrors this public repo, pinned to the `sounds-v1` tag. To check one, open https://cdn.jsdelivr.net/gh/JonathanWacks/fightingfantasy@sounds-v1/audio/door_creak.mp3 in a browser.
+The sounds are MP3s in `audio/`. They're synthesised from scratch by `tools/make_sounds.py`, so they're original and free to use. They are served from the jsDelivr CDN, which mirrors this public repo, pinned to the commit that added them. To check one, open https://cdn.jsdelivr.net/gh/JonathanWacks/fightingfantasy@98a667b83037cef8b6ffbddeaa6ddbe5f32ab9de/audio/door_creak.mp3 in a browser.
 
-- **Swap a sound** by replacing its file with a real recording of the same name. Alexa needs MP3 at 48 kbps and 24 kHz, for example: `ffmpeg -i in.wav -ac 1 -ar 24000 -b:a 48k audio/door_creak.mp3`. Then commit, push a new tag (`git tag sounds-v2 && git push --tags`), and update `DEFAULT_BASE` in `lambda/sounds.js`.
+- **Swap a sound** by replacing its file with a real recording of the same name. Alexa needs MP3 at 48 kbps and 24 kHz, for example: `ffmpeg -i in.wav -ac 1 -ar 24000 -b:a 48k audio/door_creak.mp3`. Then commit and push, and put the new commit ID (or a tag) in `DEFAULT_BASE` in `lambda/sounds.js`.
 - **Serve them from somewhere else** by setting the `SOUND_BASE_URL` environment variable, for example to your own S3 bucket.
 - **Use Amazon's Sound Library** by putting a `soundbank://` URL in the adventure's `sounds` map.
 - **Silence an event** by setting its `EVENTS` entry in `sounds.js` to `null`.

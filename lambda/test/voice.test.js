@@ -22,7 +22,7 @@ function checkSsml(ssml) {
     if (tag === 'audio') {
       audio += 1;
       assert.ok(!stack.includes('voice'), 'audio must not be inside a voice tag');
-      assert.match(attrs, /src="https:\/\/cdn\.jsdelivr\.net\/gh\/JonathanWacks\/fightingfantasy@sounds-v1\/audio\/[a-z_]+\.mp3"/);
+      assert.match(attrs, /src="https:\/\/cdn\.jsdelivr\.net\/gh\/JonathanWacks\/fightingfantasy@[0-9a-f]{40}\/audio\/[a-z_]+\.mp3"/);
     }
     if (selfClose) return '';
     if (close) assert.equal(stack.pop(), tag, `mismatched </${tag}> in ${ssml}`);
@@ -64,7 +64,7 @@ test('SOUND_BASE_URL moves where sounds are served from', () => {
 test('narration, character voices, moods and sounds render as valid SSML', () => {
   const ssml = toSsml(sectionText(adventure.sections[38]), opts);
   checkSsml(ssml);
-  assert.match(ssml, /^<audio src="https:\/\/cdn\.jsdelivr\.net\/gh\/JonathanWacks\/fightingfantasy@sounds-v1\/audio\/thunder\.mp3"\/>/);
+  assert.match(ssml, /^<audio src="https:\/\/cdn\.jsdelivr\.net\/gh\/JonathanWacks\/fightingfantasy@[0-9a-f]{40}\/audio\/thunder\.mp3"\/>/);
   assert.match(ssml, /<voice name="Brian"><prosody rate="88%">You step into the crypt/);
   assert.match(ssml, /<voice name="Matthew"><prosody rate="80%"><prosody rate="88%">Who wakes me\?/);
   assert.equal(toPlain(sectionText(adventure.sections[38])).indexOf('[['), -1);
