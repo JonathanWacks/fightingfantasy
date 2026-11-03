@@ -10,6 +10,7 @@
 const Alexa = require('ask-sdk-core');
 const { handle, choiceEntities } = require('./engine');
 const adventure = require('./adventure');
+const markup = require('./markup');
 
 const STATE_KEY = 'game';
 
@@ -63,12 +64,18 @@ function saveState(handlerInput, state) {
 
 // ---------- speech ----------
 
-function escapeSsml(text) {
-  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
+/**
+ * Narrator voice: the adventure's `narrator` (an Amazon Polly voice such as Brian),
+ * overridden by the NARRATOR_VOICE environment variable. Use 'Alexa' for Alexa's own voice.
+ */
+const voiceOptions = {
+  narrator: process.env.NARRATOR_VOICE || adventure.narrator || 'Alexa',
+  voices: adventure.voices || {},
+  sounds: adventure.sounds || {},
+};
 
 function toSsml(text) {
-  return escapeSsml(text).replace(/\n\n/g, ' <break time="600ms"/> ');
+  return markup.toSsml(text, voiceOptions);
 }
 
 // ---------- request -> action ----------
@@ -182,7 +189,7 @@ function dynamicEntitiesDirective(state) {
 
 function respondWith(handlerInput, result) {
   const rb = handlerInput.responseBuilder
-    .speak(toSsml(result.speech))
+    .speak(toSsml(result.markup || result.speech))
     .withSimpleCard(adventure.title, result.speech.replace(/\n\n/g, '\n'));
   if (!result.shouldEnd) {
     rb.reprompt(toSsml(result.reprompt));

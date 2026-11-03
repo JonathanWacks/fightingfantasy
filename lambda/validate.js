@@ -5,6 +5,9 @@
  * Usage: node validate.js   (exits non-zero on errors)
  */
 
+const { soundUrl } = require('./sounds');
+const { MOODS } = require('./markup');
+
 function validate(adventure) {
   const errors = [];
   const warnings = [];
@@ -26,7 +29,15 @@ function validate(adventure) {
 
   for (const id of ids) {
     const sec = sections[id];
-    if (!sec.text) errors.push(`${id}: missing text`);
+    const parts = Array.isArray(sec.text) ? sec.text : [sec.text];
+    if (!sec.text || !parts.length) errors.push(`${id}: missing text`);
+    parts.forEach((p) => {
+      if (typeof p === 'string') return;
+      if (!p || typeof p.say !== 'string' || !p.as) errors.push(`${id}: character lines need { as, say }`);
+      else if (!(adventure.voices || {})[p.as]) errors.push(`${id}: no voice called "${p.as}" in voices`);
+    });
+    if (sec.sound && !soundUrl(sec.sound, adventure.sounds)) errors.push(`${id}: unknown sound "${sec.sound}"`);
+    if (sec.mood && !MOODS[sec.mood]) errors.push(`${id}: unknown mood "${sec.mood}" (use ${Object.keys(MOODS).join(', ')})`);
     const kinds = ['choices', 'next', 'combat', 'testLuck', 'testSkill', 'ending'].filter((k) => sec[k] != null);
     if (kinds.length !== 1) errors.push(`${id}: must have exactly one of choices/next/combat/testLuck/testSkill/ending (has ${kinds.join(', ') || 'none'})`);
     if (sec.choices) {

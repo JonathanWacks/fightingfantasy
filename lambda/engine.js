@@ -13,13 +13,15 @@
  * dynamic-entity id ("opt2") when Alexa resolved one.
  * `rng` returns a float in [0, 1); injectable for tests.
  *
- * Speech uses blank lines ("\n\n") between paragraphs; the Alexa layer turns
- * them into pauses.
+ * The result has `markup` (with sound, mood and voice tags, see markup.js) for
+ * Alexa, and `speech`, the same text as plain words. Blank lines ("\n\n")
+ * separate paragraphs; Alexa turns them into pauses.
  */
 
 const defaultAdventure = require('./adventure');
 const { matchChoice, entitiesFor } = require('./choices');
 const { parseUtterance } = require('./textInput');
+const { sfx, sectionText, toPlain } = require('./markup');
 
 const STATE_VERSION = 1;
 const NUMBER_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
@@ -176,7 +178,7 @@ function createEngine(adventure = defaultAdventure) {
   function die(s, out) {
     s.phase = 'dead';
     s.combat = null;
-    out.push('Your adventure ends here.');
+    out.push(sfx('@death') + 'Your adventure ends here.');
   }
 
   /** Move to a section, apply its effects, and set the phase. Returns speech parts. */
@@ -185,7 +187,7 @@ function createEngine(adventure = defaultAdventure) {
     s.section = id;
     s.combat = null;
     s.test = null;
-    out.push(sec.text);
+    out.push(sectionText(sec));
     applyEffects(s, sec.effects);
     if (s.stamina <= 0) {
       die(s, out);
@@ -193,10 +195,10 @@ function createEngine(adventure = defaultAdventure) {
     }
     if (sec.ending === 'win') {
       s.phase = 'won';
-      out.push('Congratulations, hero.');
+      out.push(sfx('@win') + 'Congratulations, hero.');
     } else if (sec.ending === 'death') {
       s.phase = 'dead';
-      out.push('Your adventure ends here.');
+      out.push(sfx('@death') + 'Your adventure ends here.');
     } else if (sec.combat) {
       s.phase = 'combat';
       s.combat = {
@@ -208,9 +210,10 @@ function createEngine(adventure = defaultAdventure) {
       };
       const first = s.combat.enemies[0];
       out.push(
-        s.combat.enemies.length > 1
+        (sec.sound ? '' : sfx('@combatStart')) +
+        (s.combat.enemies.length > 1
           ? `Your foes: ${s.combat.enemies.map(enemyIntro).join(' ')}`
-          : enemyIntro(first)
+          : enemyIntro(first))
       );
     } else if (sec.testLuck) {
       s.phase = 'test';
@@ -233,7 +236,7 @@ function createEngine(adventure = defaultAdventure) {
         prompt(s),
       ];
     }
-    if (s.phase === 'section' || s.phase === 'test') return [section(s.section).text, prompt(s)];
+    if (s.phase === 'section' || s.phase === 'test') return [sectionText(section(s.section), { sound: false }), prompt(s)];
     if (s.phase === 'rolled') return [rolledSpeech(s), prompt(s)];
     if (s.phase === 'potion') return [potionOffer()];
     return [prompt(s)];
@@ -258,7 +261,8 @@ function createEngine(adventure = defaultAdventure) {
   function testLuck(s, rng) {
     const r = roll2(rng);
     const lucky = r <= s.luck;
-    const line = `You roll ${r} against your luck of ${s.luck}. ${lucky ? 'You are lucky!' : 'You are unlucky.'}`;
+    const line = `${sfx('@test')}You roll ${r} against your luck of ${s.luck}. ` +
+      (lucky ? `You are lucky!${sfx('@lucky')}` : `You are unlucky.${sfx('@unlucky')}`);
     s.luck = Math.max(0, s.luck - 1);
     return { lucky, line };
   }
@@ -268,15 +272,15 @@ function createEngine(adventure = defaultAdventure) {
     const e = c.enemies[c.idx];
     const mine = roll2(rng) + s.skill;
     const theirs = roll2(rng) + e.skill;
-    const out = [`Your attack strength is ${mine}. The ${e.name}'s is ${theirs}.`];
+    const out = [`${sfx('@round')}Your attack strength is ${mine}. The ${e.name}'s is ${theirs}.`];
     if (mine > theirs) {
       e.stamina -= 2;
       c.lastRound = 'hit';
-      out.push(e.stamina > 0 ? `You wound the ${e.name}. It has ${e.stamina} stamina left.` : `You wound the ${e.name}.`);
+      out.push(sfx('@playerHits') + (e.stamina > 0 ? `You wound the ${e.name}. It has ${e.stamina} stamina left.` : `You wound the ${e.name}.`));
     } else if (theirs > mine) {
       s.stamina -= 2;
       c.lastRound = 'wounded';
-      out.push(`The ${e.name} wounds you. Your stamina is ${Math.max(s.stamina, 0)}.`);
+      out.push(`${sfx('@playerHurt')}The ${e.name} wounds you. Your stamina is ${Math.max(s.stamina, 0)}.`);
     } else {
       c.lastRound = 'draw';
       out.push('You parry each other’s blows.');
@@ -358,7 +362,7 @@ function createEngine(adventure = defaultAdventure) {
       line = `Your luck rises to ${s.luck}.`;
     }
     const left = s.potionDoses ? 'One dose remains.' : 'The flask is empty.';
-    return [`You drink the potion of ${s.potion}. ${line} ${left}`, prompt(s)];
+    return [`${sfx('@drink')}You drink the potion of ${s.potion}. ${line} ${left}`, prompt(s)];
   }
 
   function status(s) {
@@ -424,13 +428,14 @@ function createEngine(adventure = defaultAdventure) {
   // ---------- dispatcher ----------
 
   function respond(state, parts, opts = {}) {
-    const speech = parts.filter(Boolean).join('\n\n');
+    const markup = parts.filter(Boolean).join('\n\n');
+    const speech = toPlain(markup);
     const reprompt = opts.reprompt || (state ? prompt(state) : 'Say new game to begin.');
     if (state && !opts.noRemember) {
-      state.lastSpeech = speech;
+      state.lastSpeech = markup;
       state.lastReprompt = reprompt;
     }
-    return { state, speech, reprompt, shouldEnd: Boolean(opts.end) };
+    return { state, speech, markup, reprompt, shouldEnd: Boolean(opts.end) };
   }
 
   function inProgress(s) {
@@ -589,7 +594,8 @@ function createEngine(adventure = defaultAdventure) {
           const r = roll2(rng);
           const pass = r <= s.skill;
           const t = section(s.section).testSkill;
-          const line = `You roll ${r} against your skill of ${s.skill}. ${pass ? 'You succeed!' : 'You fail.'}`;
+          const line = `${sfx('@test')}You roll ${r} against your skill of ${s.skill}. ` +
+            (pass ? `You succeed!${sfx('@lucky')}` : `You fail.${sfx('@unlucky')}`);
           return respond(s, enter(s, pass ? t.pass : t.fail, [line]));
         }
         break;

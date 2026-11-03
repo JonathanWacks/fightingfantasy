@@ -8,13 +8,14 @@
 
 const readline = require('readline');
 const { handle } = require('./engine');
+const { toTerminal } = require('./markup');
 
 const rl = readline.createInterface({ input: process.stdin, output: process.stdout, prompt: '\n> ' });
 let state = null;
 
 function say(result) {
   state = result.state;
-  console.log(`\n${result.speech}`);
+  console.log(`\n${toTerminal(result.markup || result.speech)}`);
   if (result.shouldEnd) { rl.close(); return; }
   rl.prompt();
 }

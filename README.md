@@ -38,6 +38,14 @@ Your game is saved after every turn. Next time you open the skill, it asks wheth
 
 Alexa-hosted skills come with an S3 bucket (`S3_PERSISTENCE_BUCKET`), which the skill uses automatically to save games. If you host on your own Lambda instead, set that environment variable to a bucket the function can write to, or set `DYNAMODB_PERSISTENCE_TABLE_NAME` and add `ask-sdk-dynamodb-persistence-adapter`. Without either, the game still works but only lasts one session.
 
+## Voices and sound
+
+The story is read by a narrator voice: Amazon Polly's **Brian**, set by `narrator` in `adventure.js`. Characters can speak in voices of their own; in Ashen Tor the ferryman and Malgrath do. To go back to Alexa's own voice, set `narrator: 'Alexa'`, or add a `NARRATOR_VOICE` environment variable to the Lambda.
+
+The engine plays sound effects from the Alexa Skills Kit Sound Library on game events. For example, there's a drum roll before every luck or skill test, a chime when you're lucky, a swish and thud each combat round, a bugle when you win and a tolling bell when you die. Sections can add their own sound and mood. All the sounds are listed in `lambda/sounds.js`, and you can swap any of them. To hear one first, paste `<speak><audio src="soundbank://soundlibrary/..."/></speak>` into the Test tab. Set an `EVENTS` entry to `null` to silence that event.
+
+Alexa plays at most five sound clips in one response, so the renderer stops adding clips after the fifth.
+
 ## How spoken choices work
 
 Alexa reads the choices naturally: *"Will you take the damp left passage, or creep towards the torchlight?"* Each time, the skill sends the current choices to Alexa as **dynamic entities** (`Dialog.UpdateDynamicEntities`). That biases Alexa's recognition towards those phrases, so "the torchlight", "go right" or "creep towards the torch" resolve to the right option. The engine then double-checks the words itself:
@@ -57,6 +65,8 @@ lambda/
   index.js        Alexa request handlers (ASK SDK v2) and save/load
   engine.js       the game rules — pure logic, no Alexa code
   choices.js      matching spoken answers to choices; dynamic-entity values
+  markup.js       sound / mood / voice tags, rendered to SSML (or plain text)
+  sounds.js       sound-effect names and the sounds played on game events
   adventure.js    the story: numbered sections, choices, fights, tests
   validate.js     checks the story for broken links and dead ends
   play.js         play in a terminal using the same engine
@@ -87,6 +97,21 @@ testLuck:  { lucky: 31, unlucky: 32 }
 testSkill: { pass: 13, fail: 15 }
 ending:    'win' | 'death'
 ```
+
+Sound, mood and character voices:
+
+```js
+{
+  sound: 'door_creak',                      // played on arrival (names in sounds.js, or a soundbank:// URL)
+  mood: 'whisper',                          // whisper | dread | tense | quiet | triumph
+  text: [
+    'He holds out a bony hand, and rasps:',
+    { as: 'ferryman', say: 'Five gold to cross.' },   // spoken in voices.ferryman
+  ],
+}
+```
+
+At the top of the adventure, `narrator: 'Brian'` and `voices: { ferryman: { name: 'Russell', rate: '85%' } }` choose the Polly voices; `sounds: { name: 'soundbank://…' }` adds your own sound names. The validator checks that every sound, mood and voice you use exists.
 
 Effects: `{ stamina: -3 }`, `{ skill: 1, raiseInitial: true }`, `{ luck: 1 }`, `{ gold: 5 }`, `{ provisions: 2 }`, `{ addItem: 'rope' }`, `{ removeItem: 'holy water' }`, `{ setFlag: 'armoury' }`.
 

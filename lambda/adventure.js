@@ -9,6 +9,11 @@
  *             { addItem: 'x' }, { removeItem: 'x' }, { setFlag: 'x' }
  *             skill/luck/stamina gains are capped at your starting score unless
  *             { raiseInitial: true } is also set on that effect.
+ *   sound     optional sound effect played on arrival (a name from sounds.js)
+ *   mood      optional delivery: whisper | dread | tense | quiet | triumph
+ *   text can also be a list mixing narration and character lines:
+ *             ['He holds out a hand.', { as: 'ferryman', say: 'Five gold to cross.' }]
+ *             `as` names a voice in `voices` below.
  *   then ONE of:
  *     choices   [{ text, to, requires?: { item, gold, flag, notFlag }, say?: [phrases] }]
  *               `text` is read aloud ("Will you ... or ...?"). `say` lists other things
@@ -22,6 +27,13 @@
 module.exports = {
   title: 'Beneath Ashen Tor',
   start: 1,
+  // Amazon Polly voices. 'Alexa' uses Alexa's own voice. A voice can be a name,
+  // or { name, rate } to slow it down or speed it up.
+  narrator: 'Brian',
+  voices: {
+    ferryman: { name: 'Russell', rate: '85%' },
+    malgrath: { name: 'Matthew', rate: '80%' },
+  },
   intro:
     'For three winters the necromancer Malgrath has slept beneath Ashen Tor, ' +
     'and for three winters the sun has not fully risen over the valley. ' +
@@ -31,6 +43,7 @@ module.exports = {
 
   sections: {
     1: {
+      sound: 'wind',
       text:
         'You stand at the foot of Ashen Tor in the grey half-light. An iron door, ' +
         'rusted and half open, leads into the hill. Above it, a scree slope climbs ' +
@@ -42,6 +55,7 @@ module.exports = {
     },
 
     2: {
+      sound: 'door_creak',
       text:
         'You enter a long entrance hall. Bones crunch under your boots. Two passages ' +
         'lead on: the left one smells of stagnant water, and from the right comes the ' +
@@ -78,6 +92,7 @@ module.exports = {
     },
 
     9: {
+      mood: 'quiet',
       text:
         'From the gallery you look down into a guardroom. Two goblins squat over a game ' +
         'of knucklebones. A silver key hangs on a hook behind them. The gallery runs on ' +
@@ -90,6 +105,7 @@ module.exports = {
     },
 
     4: {
+      sound: 'growl',
       text:
         'The left passage slopes down into ankle-deep water. Something heavy splashes ' +
         'towards you, and a giant rat the size of a dog bursts from the gloom, ' +
@@ -98,6 +114,7 @@ module.exports = {
     },
 
     5: {
+      mood: 'quiet',
       text:
         'You peer around the corner into a guardroom. Two goblins squabble over a game ' +
         'of knucklebones. A silver key hangs on a hook behind them.',
@@ -108,6 +125,7 @@ module.exports = {
     },
 
     14: {
+      mood: 'whisper',
       text: 'You hold your breath and edge along the wall, keeping to the shadows.',
       testSkill: { pass: 13, fail: 15 },
     },
@@ -131,6 +149,7 @@ module.exports = {
     },
 
     13: {
+      mood: 'whisper',
       text:
         'Without a sound you lift the silver key from its hook and slip away while the ' +
         'goblins argue over their game. Fortune favours the bold. You gain one luck.',
@@ -154,6 +173,7 @@ module.exports = {
     },
 
     12: {
+      sound: 'droplets',
       text:
         'The rat floats away. Beyond it, a bloated corpse in old armour bobs against the ' +
         'wall. In its belt pouch you find three gold pieces and a small silver mirror, ' +
@@ -166,6 +186,7 @@ module.exports = {
     },
 
     17: {
+      sound: 'drips',
       text:
         'You reach a junction. To the east, an iron gate with a silver lock. To the west, ' +
         'worn steps spiral down into the roar of rushing water. Straight ahead, a low ' +
@@ -178,6 +199,7 @@ module.exports = {
     },
 
     39: {
+      sound: 'thunder',
       text:
         'You wriggle forward on your belly for what feels like an age. Then you hear a ' +
         'grinding crack behind you, and another ahead. The roof settles, slowly and ' +
@@ -186,6 +208,7 @@ module.exports = {
     },
 
     18: {
+      sound: 'door_creak_long',
       text:
         'The silver key turns with a sigh. Inside is an old armoury. Most of the weapons ' +
         'have rusted away, but one sword gleams as if freshly forged, and a stoppered ' +
@@ -200,10 +223,12 @@ module.exports = {
     },
 
     19: {
-      text:
+      mood: 'dread',
+      text: [
         'At the bottom of the steps an underground river races through a cavern. A tall ' +
-        'skeletal ferryman leans on his pole beside a black boat. He holds out a bony ' +
-        'hand. "Five gold to cross," he rasps.',
+          'skeletal ferryman leans on his pole beside a black boat. He holds out a bony hand, and rasps:',
+        { as: 'ferryman', say: 'Five gold to cross.' },
+      ],
       choices: [
         { text: 'pay the ferryman five gold', to: 20, requires: { gold: 5 }, say: ['pay', 'pay him', 'give him the gold'] },
         { text: 'swim across the river', to: 21, say: ['swim'] },
@@ -212,6 +237,7 @@ module.exports = {
     },
 
     20: {
+      sound: 'rowing',
       text:
         'The ferryman takes your coins and poles you across in silence. On the far bank ' +
         'he bows, and the boat drifts away into the dark.',
@@ -241,7 +267,10 @@ module.exports = {
     },
 
     22: {
-      text: 'The ferryman lifts his iron-shod pole and swings it at your head.',
+      text: [
+        { as: 'ferryman', say: 'Then you will join the drowned.' },
+        'The ferryman lifts his iron-shod pole and swings it at your head.',
+      ],
       combat: { enemies: [{ name: 'skeletal ferryman', skill: 7, stamina: 7 }], win: 26 },
     },
 
@@ -275,6 +304,7 @@ module.exports = {
     },
 
     27: {
+      sound: 'march',
       text:
         'As your fingers close on the shield, the stone knight lurches into life with a ' +
         'grinding of stone, and raises its sword.',
@@ -290,6 +320,7 @@ module.exports = {
     },
 
     29: {
+      sound: 'footsteps',
       text:
         'The passage beyond the archway is lined with skulls in niches. Halfway along, a ' +
         'flagstone clicks under your foot.',
@@ -297,11 +328,13 @@ module.exports = {
     },
 
     31: {
+      sound: 'darts',
       text: 'Darts hiss from the walls, but every one of them misses you. You hurry on.',
       next: 33,
     },
 
     32: {
+      sound: 'darts',
       text: 'Darts hiss from the walls and two bite into your arm. You lose three stamina.',
       effects: [{ stamina: -3 }],
       next: 33,
@@ -319,6 +352,7 @@ module.exports = {
     },
 
     34: {
+      sound: 'magic',
       text:
         'The water is sweet and warm. Strength floods back into your limbs. Gain four ' +
         'stamina and two luck.',
@@ -327,6 +361,8 @@ module.exports = {
     },
 
     35: {
+      mood: 'dread',
+      sound: 'ghost_wail',
       text:
         'As you reach the bronze door, a howling shape of mist and malice pours out of ' +
         'the metal: a wraith, bound to guard its master’s rest.',
@@ -342,6 +378,7 @@ module.exports = {
     },
 
     37: {
+      sound: 'blast',
       text:
         'The flask shatters against the wraith. It shrieks and boils away into nothing, ' +
         'and the bronze door swings slowly open.',
@@ -350,10 +387,14 @@ module.exports = {
     },
 
     38: {
-      text:
+      mood: 'dread',
+      sound: 'thunder',
+      text: [
         'You step into the crypt of Malgrath. On a stone bier the necromancer sits up, ' +
-        'his skin like old parchment. The Dawnstone glows on his brow. He lifts one ' +
-        'withered hand, and black fire gathers in his palm.',
+          'his skin like old parchment. The Dawnstone glows on his brow.',
+        { as: 'malgrath', say: 'Who wakes me? Ah. Another little thief.' },
+        'He lifts one withered hand, and black fire gathers in his palm.',
+      ],
       choices: [
         { text: 'raise the polished shield', to: 40, requires: { item: 'polished shield' }, say: ['shield', 'use the shield', 'reflect it'] },
         { text: 'hold up the silver mirror', to: 40, requires: { item: 'silver mirror' }, say: ['mirror', 'use the mirror', 'reflect it'] },
@@ -362,6 +403,7 @@ module.exports = {
     },
 
     40: {
+      sound: 'blast',
       text:
         'The black fire strikes the mirrored surface and rebounds into Malgrath’s ' +
         'face. He reels, screaming, half his power burned away. Now finish him!',
@@ -387,11 +429,16 @@ module.exports = {
     },
 
     45: {
-      text: 'Malgrath draws a blade of bone from his robes. He is old, but far from weak.',
+      text: [
+        'Malgrath draws a blade of bone from his robes.',
+        { as: 'malgrath', say: 'I have slept three winters. I will sleep three hundred more in your bones.' },
+        'He is old, but far from weak.',
+      ],
       combat: { enemies: [{ name: 'Malgrath', skill: 9, stamina: 9 }], win: 44 },
     },
 
     44: {
+      mood: 'triumph',
       text:
         'Malgrath crumbles into dust and the Dawnstone falls ringing to the floor. As you ' +
         'lift it, the tor begins to tremble. You run, back through the halls, and burst ' +

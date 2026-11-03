@@ -49,7 +49,7 @@ async function say(request, attrs) {
 
 test('full voice flow through the Alexa handler', async () => {
   let r = await say({ type: 'LaunchRequest' });
-  assert.match(r.ssml, /^<speak>Welcome to Beneath Ashen Tor\./);
+  assert.match(r.ssml, /^<speak><voice name="Brian">Welcome to Beneath Ashen Tor\./);
   assert.match(r.ssml, /<break time="600ms"\/>/);
   assert.equal(r.res.response.shouldEndSession, false);
 
@@ -99,7 +99,7 @@ test('full voice flow through the Alexa handler', async () => {
 });
 
 test('SSML special characters are escaped', () => {
-  assert.equal(_internal.toSsml('a & b < c\n\nd'), 'a &amp; b &lt; c <break time="600ms"/> d');
+  assert.equal(_internal.toSsml('a & b < c\n\nd'), '<voice name="Brian">a &amp; b &lt; c <break time="600ms"/> d</voice>');
 });
 
 test('SessionEndedRequest returns an empty response', async () => {
