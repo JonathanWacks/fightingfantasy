@@ -10,7 +10,9 @@
  *             skill/luck/stamina gains are capped at your starting score unless
  *             { raiseInitial: true } is also set on that effect.
  *   then ONE of:
- *     choices   [{ text, to, requires?: { item, gold, flag, notFlag } }]
+ *     choices   [{ text, to, requires?: { item, gold, flag, notFlag }, say?: [phrases] }]
+ *               `text` is read aloud ("Will you ... or ...?"). `say` lists other things
+ *               the player might answer with; the choice's own words always work too.
  *     next      section id; the player says "continue"
  *     combat    { enemies: [{ name, skill, stamina }], win, escape? }
  *     testLuck  { lucky, unlucky }
@@ -34,8 +36,8 @@ module.exports = {
         'rusted and half open, leads into the hill. Above it, a scree slope climbs ' +
         'to a dark crack in the rock.',
       choices: [
-        { text: 'squeeze through the iron door', to: 2 },
-        { text: 'climb the scree towards the crack', to: 3 },
+        { text: 'squeeze through the iron door', to: 2, say: ['door', 'go in', 'enter'] },
+        { text: 'climb the scree towards the crack', to: 3, say: ['climb', 'scree', 'slope', 'go up'] },
       ],
     },
 
@@ -45,8 +47,8 @@ module.exports = {
         'lead on: the left one smells of stagnant water, and from the right comes the ' +
         'flicker of torchlight and the sound of rough voices.',
       choices: [
-        { text: 'take the damp left passage', to: 4 },
-        { text: 'creep towards the torchlight', to: 5 },
+        { text: 'take the damp left passage', to: 4, say: ['left', 'go left', 'water'] },
+        { text: 'creep towards the torchlight', to: 5, say: ['right', 'go right', 'torch', 'torches', 'voices'] },
       ],
     },
 
@@ -81,9 +83,9 @@ module.exports = {
         'of knucklebones. A silver key hangs on a hook behind them. The gallery runs on ' +
         'into darkness.',
       choices: [
-        { text: 'drop down and attack the goblins', to: 10 },
-        { text: 'tie your rope to a pillar and lower yourself silently to the key', to: 13, requires: { item: 'rope' } },
-        { text: 'follow the gallery onward and leave the goblins alone', to: 11 },
+        { text: 'drop down and attack the goblins', to: 10, say: ['attack', 'fight', 'jump down'] },
+        { text: 'tie your rope to a pillar and lower yourself silently to the key', to: 13, requires: { item: 'rope' }, say: ['use the rope', 'rope', 'climb down'] },
+        { text: 'follow the gallery onward and leave the goblins alone', to: 11, say: ['keep going', 'go on', 'leave them', 'carry on'] },
       ],
     },
 
@@ -100,8 +102,8 @@ module.exports = {
         'You peer around the corner into a guardroom. Two goblins squabble over a game ' +
         'of knucklebones. A silver key hangs on a hook behind them.',
       choices: [
-        { text: 'charge in and attack', to: 10 },
-        { text: 'try to sneak past and snatch the key', to: 14 },
+        { text: 'charge in and attack', to: 10, say: ['attack', 'fight', 'charge'] },
+        { text: 'try to sneak past and snatch the key', to: 14, say: ['sneak', 'steal the key', 'grab the key'] },
       ],
     },
 
@@ -158,8 +160,8 @@ module.exports = {
         'its glass unclouded despite the damp.',
       effects: [{ gold: 3 }, { addItem: 'silver mirror' }],
       choices: [
-        { text: 'wade on to the north arch', to: 17 },
-        { text: 'go back and take the torch-lit passage instead', to: 5 },
+        { text: 'wade on to the north arch', to: 17, say: ['north', 'arch', 'go on', 'keep going'] },
+        { text: 'go back and take the torch-lit passage instead', to: 5, say: ['go back', 'back', 'torchlight'] },
       ],
     },
 
@@ -169,9 +171,9 @@ module.exports = {
         'worn steps spiral down into the roar of rushing water. Straight ahead, a low ' +
         'crawlway disappears into the rock.',
       choices: [
-        { text: 'unlock the iron gate', to: 18, requires: { item: 'silver key', notFlag: 'armoury' } },
-        { text: 'take the steps down towards the water', to: 19 },
-        { text: 'squeeze into the crawlway', to: 39 },
+        { text: 'unlock the iron gate', to: 18, requires: { item: 'silver key', notFlag: 'armoury' }, say: ['gate', 'east', 'use the key', 'unlock'] },
+        { text: 'take the steps down towards the water', to: 19, say: ['steps', 'stairs', 'west', 'go down', 'river'] },
+        { text: 'squeeze into the crawlway', to: 39, say: ['crawl', 'crawlway', 'straight ahead', 'tunnel'] },
       ],
     },
 
@@ -203,9 +205,9 @@ module.exports = {
         'skeletal ferryman leans on his pole beside a black boat. He holds out a bony ' +
         'hand. "Five gold to cross," he rasps.',
       choices: [
-        { text: 'pay the ferryman five gold', to: 20, requires: { gold: 5 } },
-        { text: 'swim across the river', to: 21 },
-        { text: 'refuse, and fight the ferryman for his boat', to: 22 },
+        { text: 'pay the ferryman five gold', to: 20, requires: { gold: 5 }, say: ['pay', 'pay him', 'give him the gold'] },
+        { text: 'swim across the river', to: 21, say: ['swim'] },
+        { text: 'refuse, and fight the ferryman for his boat', to: 22, say: ['fight', 'attack', 'refuse', 'attack the ferryman'] },
       ],
     },
 
@@ -257,9 +259,9 @@ module.exports = {
         'last of them holds a polished shield that shines like a moonlit pool. An ' +
         'archway on the far side leads deeper into the tor.',
       choices: [
-        { text: 'take the polished shield', to: 27, requires: { notFlag: 'shield' } },
-        { text: 'study the statues more closely', to: 28, requires: { notFlag: 'studied' } },
-        { text: 'go through the archway', to: 29 },
+        { text: 'take the polished shield', to: 27, requires: { notFlag: 'shield' }, say: ['shield', 'take the shield', 'grab the shield'] },
+        { text: 'study the statues more closely', to: 28, requires: { notFlag: 'studied' }, say: ['statues', 'look at the statues', 'examine', 'read the words'] },
+        { text: 'go through the archway', to: 29, say: ['archway', 'arch', 'go on', 'move on'] },
       ],
     },
 
@@ -311,8 +313,8 @@ module.exports = {
         'of clear water, untouched by the crypt’s rot. Ahead, a great bronze door ' +
         'radiates a deathly cold.',
       choices: [
-        { text: 'drink from the font', to: 34, requires: { notFlag: 'font' } },
-        { text: 'approach the bronze door', to: 35 },
+        { text: 'drink from the font', to: 34, requires: { notFlag: 'font' }, say: ['drink', 'font', 'shrine', 'drink the water'] },
+        { text: 'approach the bronze door', to: 35, say: ['door', 'bronze door', 'go on'] },
       ],
     },
 
@@ -329,8 +331,8 @@ module.exports = {
         'As you reach the bronze door, a howling shape of mist and malice pours out of ' +
         'the metal: a wraith, bound to guard its master’s rest.',
       choices: [
-        { text: 'fight the wraith with your sword', to: 36 },
-        { text: 'hurl the holy water at it', to: 37, requires: { item: 'holy water' } },
+        { text: 'fight the wraith with your sword', to: 36, say: ['fight', 'attack', 'sword'] },
+        { text: 'hurl the holy water at it', to: 37, requires: { item: 'holy water' }, say: ['holy water', 'throw the holy water', 'use the holy water'] },
       ],
     },
 
@@ -353,9 +355,9 @@ module.exports = {
         'his skin like old parchment. The Dawnstone glows on his brow. He lifts one ' +
         'withered hand, and black fire gathers in his palm.',
       choices: [
-        { text: 'raise the polished shield', to: 40, requires: { item: 'polished shield' } },
-        { text: 'hold up the silver mirror', to: 40, requires: { item: 'silver mirror' } },
-        { text: 'throw yourself aside', to: 41 },
+        { text: 'raise the polished shield', to: 40, requires: { item: 'polished shield' }, say: ['shield', 'use the shield', 'reflect it'] },
+        { text: 'hold up the silver mirror', to: 40, requires: { item: 'silver mirror' }, say: ['mirror', 'use the mirror', 'reflect it'] },
+        { text: 'throw yourself aside', to: 41, say: ['dodge', 'dive', 'jump aside', 'duck'] },
       ],
     },
 

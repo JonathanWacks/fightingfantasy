@@ -10,21 +10,24 @@ function parseUtterance(raw) {
   if (/^(quit|exit|stop|cancel)$/.test(t)) return { type: 'stop' };
   if (/new game|start (again|over)|restart/.test(t)) return { type: 'new' };
   if (/roll again|reroll/.test(t)) return { type: 'reroll' };
-  if (/luck/.test(t)) return { type: 'luck' };
-  if (/^(skill|strength|fortune)$/.test(t)) return { type: 'potion', which: t };
-  if (/potion|drink/.test(t)) return { type: 'drink' };
-  if (/\beat\b|meal|provisions/.test(t)) return { type: 'eat' };
-  if (/attack|fight|strike|hit/.test(t)) return { type: 'attack' };
-  if (/escape|flee|run away/.test(t)) return { type: 'escape' };
+  if (/\bluck\b/.test(t)) return { type: 'luck' };
+  if (/\btest (my|your) skill\b/.test(t)) return { type: 'continue' };
+  const potion = t.match(/\b(skill|strength|fortune)\b/);
+  if (potion && t.split(' ').length <= 6) return { type: 'potion', which: potion[1] };
+  if (/\b(potion|drink)\b/.test(t)) return { type: 'drink' };
+  if (/\b(eat|meal|provisions)\b/.test(t)) return { type: 'eat' };
+  if (/\b(attack|fight|strike|hit)\b/.test(t)) return { type: 'attack' };
+  if (/\b(escape|flee|run away)\b/.test(t)) return { type: 'escape' };
   if (/status|stats|stamina|how am i/.test(t)) return { type: 'status' };
   if (/inventory|carrying|backpack/.test(t)) return { type: 'inventory' };
-  if (/repeat|again|what\?/.test(t)) return { type: 'repeat' };
+  if (/options|choices/.test(t)) return { type: 'options' };
+  if (/\b(repeat|again)\b/.test(t)) return { type: 'repeat' };
   if (/help/.test(t)) return { type: 'help' };
   if (/^(yes|yeah|yep|sure|ok|okay)\b/.test(t)) return { type: 'yes' };
   if (/^(no|nope)\b/.test(t)) return { type: 'no' };
-  if (/continue|go on|next|carry on|roll|dice|resume/.test(t)) return { type: 'continue' };
-  if (n) return { type: 'choose', n: NUMBERS[n[1]] || Number(n[1]) };
-  return { type: 'unknown' };
+  if (/\b(continue|go on|next|carry on|roll|dice|resume)\b/.test(t)) return { type: 'continue' };
+  if (n && t.split(' ').length <= 3) return { type: 'choose', n: NUMBERS[n[1]] || Number(n[1]) };
+  return t ? { type: 'say', text: t } : { type: 'unknown' };
 }
 
 module.exports = { parseUtterance };

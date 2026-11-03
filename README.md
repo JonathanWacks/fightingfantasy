@@ -12,7 +12,9 @@ The adventure is original. The rules follow the familiar 1980s gamebook system.
 |---|---|
 | **yes** / **roll again** | Accept your rolled scores, or reroll them |
 | **skill**, **strength** or **fortune** | Choose your potion (two doses) |
-| **one**, **two**, **option three**… | Choose a path |
+| **go left**, **the iron door**, **attack the goblins**… | Choose a path in your own words |
+| **one**, **two**, **the last one**… | …or by number (the order Alexa read them) |
+| **what are my options** | Hear the choices as a numbered list |
 | **continue** | Move on when there is only one way forward |
 | **attack** | Fight one combat round |
 | **test my luck** | In a test-your-luck section; or straight after a wound in combat to make your blow hurt more (or theirs hurt less) |
@@ -36,12 +38,25 @@ Your game is saved after every turn. Next time you open the skill, it asks wheth
 
 Alexa-hosted skills come with an S3 bucket (`S3_PERSISTENCE_BUCKET`), which the skill uses automatically to save games. If you host on your own Lambda instead, set that environment variable to a bucket the function can write to, or set `DYNAMODB_PERSISTENCE_TABLE_NAME` and add `ask-sdk-dynamodb-persistence-adapter`. Without either, the game still works but only lasts one session.
 
+## How spoken choices work
+
+Alexa reads the choices naturally: *"Will you take the damp left passage, or creep towards the torchlight?"* Each time, the skill sends the current choices to Alexa as **dynamic entities** (`Dialog.UpdateDynamicEntities`). That biases Alexa's recognition towards those phrases, so "the torchlight", "go right" or "creep towards the torch" resolve to the right option. The engine then double-checks the words itself:
+
+1. an option Alexa matched, or a number or ordinal ("two", "the last one")
+2. an exact phrase from the choice's text or `say` list
+3. the most shared words ("head for the torch" → torchlight)
+4. a command such as "status" or "eat"
+5. otherwise Alexa reads the numbered list
+
+If two different choices fit equally well, Alexa asks "Do you mean … or …?". "Fight" and "go on" also pick a choice when one clearly matches, even though Alexa hears them as the Attack and Continue commands.
+
 ## Project layout
 
 ```
 lambda/
   index.js        Alexa request handlers (ASK SDK v2) and save/load
   engine.js       the game rules — pure logic, no Alexa code
+  choices.js      matching spoken answers to choices; dynamic-entity values
   adventure.js    the story: numbered sections, choices, fights, tests
   validate.js     checks the story for broken links and dead ends
   play.js         play in a terminal using the same engine
@@ -65,7 +80,7 @@ npm run play    # play in the terminal: type "1", "attack", "test my luck"…
 Edit `lambda/adventure.js`. Each section has `text`, optional `effects`, and **exactly one** of these:
 
 ```js
-choices:   [{ text: 'open the gate', to: 18, requires: { item: 'silver key' } }]
+choices:   [{ text: 'open the gate', to: 18, requires: { item: 'silver key' }, say: ['gate', 'use the key'] }]
 next:      23                                   // player says "continue"
 combat:    { enemies: [{ name: 'wraith', skill: 8, stamina: 7 }], win: 38, escape: 29 }
 testLuck:  { lucky: 31, unlucky: 32 }
@@ -76,5 +91,7 @@ ending:    'win' | 'death'
 Effects: `{ stamina: -3 }`, `{ skill: 1, raiseInitial: true }`, `{ luck: 1 }`, `{ gold: 5 }`, `{ provisions: 2 }`, `{ addItem: 'rope' }`, `{ removeItem: 'holy water' }`, `{ setFlag: 'armoury' }`.
 
 Requirements: `item`, `gold`, `flag` and `notFlag`. A choice whose requirement isn't met is left out of what Alexa reads, and the remaining options are renumbered. Run `npm test` after editing. The validator flags missing sections, unreachable sections, and choice lists where every option has a requirement (which could leave the player stuck).
+
+Write each choice's `text` so it reads well after "Will you…": a short verb phrase in lower case. `say` is optional. Add it for short answers players are likely to give, such as directions ("left"), single nouns ("gate") or other verbs ("unlock"). The choice's own words always work. The validator warns when the same `say` phrase is listed for two choices that lead to different sections.
 
 Keep section text short. It is read aloud, and two to four sentences works best.

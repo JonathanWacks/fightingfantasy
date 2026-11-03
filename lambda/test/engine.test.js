@@ -57,7 +57,8 @@ test('launch -> accept -> potion -> first section', () => {
   r = handle(r.state, { type: 'choose', n: 3 });
   assert.equal(r.state.potion, 'fortune');
   assert.equal(r.state.section, 1);
-  assert.match(r.speech, /Say one to squeeze through the iron door, or two/);
+  assert.match(r.speech, /Will you squeeze through the iron door, or climb the scree towards the crack\?/);
+  assert.match(r.speech, /answer in your own words, or say the number/);
 });
 
 test('roll again produces a fresh character', () => {
@@ -197,6 +198,7 @@ test('random bots finish thousands of games without errors, and some win', () =>
   const pick = (arr) => arr[Math.floor(rng() * arr.length)];
   const endings = { won: 0, dead: 0 };
   const visited = new Set();
+  let spoken = 0;
 
   for (let game = 0; game < 3000; game++) {
     let r = handle(null, 'launch', rng);
@@ -214,13 +216,26 @@ test('random bots finish thousands of games without errors, and some win', () =>
       else if (s.phase === 'test') action = s.test === 'luck' ? 'luck' : 'continue';
       else if (s.phase === 'combat') action = rng() < 0.15 ? pick(['luck', 'escape', 'drink', 'status']) : 'attack';
       else if (section(s).next) action = 'continue';
-      else action = { type: 'choose', n: 1 + Math.floor(rng() * visibleChoices(s).length) };
+      else {
+        const choices = visibleChoices(s);
+        const k = Math.floor(rng() * choices.length);
+        const c = choices[k];
+        const r2 = rng();
+        if (r2 < 0.4) action = { type: 'choose', n: k + 1 };
+        else if (r2 < 0.7) action = { type: 'say', text: c.text };
+        else action = { type: 'say', text: 'I want to ' + c.text };
+      }
       r = handle(s, action, rng);
+      if (action.type === 'say' || action.type === 'choose') {
+        const meant = action.type === 'choose' ? visibleChoices(s)[action.n - 1] : visibleChoices(s).find((c) => action.text.endsWith(c.text));
+        assert.equal(r.state.section === meant.to || r.state.phase === 'dead', true, `"${action.text || action.n}" at ${s.section} went to ${r.state.section}`);
+        spoken += action.type === 'say' ? 1 : 0;
+      }
       assert.ok(step < 399, 'game did not finish');
     }
   }
   assert.equal(endings.won + endings.dead, 3000);
-  console.log(`# bot results: ${endings.won} wins, ${endings.dead} deaths`);
+  console.log(`# bot results: ${endings.won} wins, ${endings.dead} deaths, ${spoken} spoken choices`);
   assert.ok(endings.won > 100, `only ${endings.won} wins`);
   assert.deepEqual(
     Object.keys(adventure.sections).map(Number).filter((id) => !visited.has(id)),

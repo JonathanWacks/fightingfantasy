@@ -33,6 +33,17 @@ function validate(adventure) {
       if (sec.choices.length === 0) errors.push(`${id}: empty choices`);
       if (sec.choices.length > 9) errors.push(`${id}: more than nine choices`);
       if (!sec.choices.some((c) => !c.requires)) errors.push(`${id}: every choice has a requirement, so the player could get stuck`);
+      const owner = {};
+      sec.choices.forEach((c, i) => {
+        if (c.say !== undefined && !Array.isArray(c.say)) errors.push(`${id}: choice ${i + 1} "say" must be a list of phrases`);
+        (c.say || []).forEach((p) => {
+          const key = String(p).toLowerCase().trim();
+          if (owner[key] !== undefined && sec.choices[owner[key]].to !== c.to) {
+            warnings.push(`${id}: "${p}" is listed for two different choices; players saying it will be asked which they mean`);
+          }
+          owner[key] = i;
+        });
+      });
     }
     if (sec.ending && !['win', 'death'].includes(sec.ending)) errors.push(`${id}: unknown ending ${sec.ending}`);
     for (const to of links(sec)) if (!exists(to)) errors.push(`${id}: links to missing section ${to}`);

@@ -5,7 +5,12 @@
       "intents": [
         {
           "name": "ChooseOptionIntent",
-          "slots": [{ "name": "number", "type": "AMAZON.NUMBER" }],
+          "slots": [
+            {
+              "name": "number",
+              "type": "AMAZON.NUMBER"
+            }
+          ],
           "samples": [
             "{number}",
             "option {number}",
@@ -27,7 +32,12 @@
         },
         {
           "name": "ChoosePotionIntent",
-          "slots": [{ "name": "potion", "type": "PotionType" }],
+          "slots": [
+            {
+              "name": "potion",
+              "type": "PotionType"
+            }
+          ],
           "samples": [
             "{potion}",
             "the {potion} potion",
@@ -39,6 +49,52 @@
             "I choose {potion}",
             "give me {potion}",
             "{potion} please"
+          ]
+        },
+        {
+          "name": "MakeChoiceIntent",
+          "slots": [
+            {
+              "name": "choice",
+              "type": "ChoiceType"
+            }
+          ],
+          "samples": [
+            "{choice}",
+            "I {choice}",
+            "I'll {choice}",
+            "I will {choice}",
+            "I want to {choice}",
+            "I'd like to {choice}",
+            "let's {choice}",
+            "I choose to {choice}",
+            "I decide to {choice}",
+            "try to {choice}",
+            "go {choice}",
+            "go to the {choice}",
+            "head {choice}",
+            "take the {choice}",
+            "I'll take the {choice}",
+            "use the {choice}",
+            "the {choice}",
+            "the {choice} one",
+            "I'll go {choice}"
+          ]
+        },
+        {
+          "name": "OptionsIntent",
+          "slots": [],
+          "samples": [
+            "what are my options",
+            "what are my choices",
+            "what can I do",
+            "list the options",
+            "read the options",
+            "tell me my options",
+            "options",
+            "choices",
+            "what were the options",
+            "what were my choices"
           ]
         },
         {
@@ -63,7 +119,15 @@
         {
           "name": "EscapeIntent",
           "slots": [],
-          "samples": ["escape", "run away", "flee", "run", "retreat", "get out of here", "try to escape"]
+          "samples": [
+            "escape",
+            "run away",
+            "flee",
+            "run",
+            "retreat",
+            "get out of here",
+            "try to escape"
+          ]
         },
         {
           "name": "TestLuckIntent",
@@ -143,12 +207,26 @@
         {
           "name": "RollAgainIntent",
           "slots": [],
-          "samples": ["roll again", "reroll", "re roll", "roll a new character", "roll new scores", "try again"]
+          "samples": [
+            "roll again",
+            "reroll",
+            "re roll",
+            "roll a new character",
+            "roll new scores",
+            "try again"
+          ]
         },
         {
           "name": "NewGameIntent",
           "slots": [],
-          "samples": ["new game", "start a new game", "new adventure", "start a new adventure", "restart", "begin again"]
+          "samples": [
+            "new game",
+            "start a new game",
+            "new adventure",
+            "start a new adventure",
+            "restart",
+            "begin again"
+          ]
         },
         {
           "name": "ContinueIntent",
@@ -169,24 +247,195 @@
             "onward"
           ]
         },
-        { "name": "AMAZON.YesIntent", "samples": [] },
-        { "name": "AMAZON.NoIntent", "samples": [] },
-        { "name": "AMAZON.RepeatIntent", "samples": ["say that again", "what were my options", "what are my choices"] },
-        { "name": "AMAZON.HelpIntent", "samples": ["how do I play", "what are the rules", "explain the rules"] },
-        { "name": "AMAZON.StartOverIntent", "samples": [] },
-        { "name": "AMAZON.NextIntent", "samples": [] },
-        { "name": "AMAZON.StopIntent", "samples": [] },
-        { "name": "AMAZON.CancelIntent", "samples": [] },
-        { "name": "AMAZON.NavigateHomeIntent", "samples": [] },
-        { "name": "AMAZON.FallbackIntent", "samples": [] }
+        {
+          "name": "AMAZON.YesIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.NoIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.RepeatIntent",
+          "samples": [
+            "say that again",
+            "tell me again"
+          ]
+        },
+        {
+          "name": "AMAZON.HelpIntent",
+          "samples": [
+            "how do I play",
+            "what are the rules",
+            "explain the rules"
+          ]
+        },
+        {
+          "name": "AMAZON.StartOverIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.NextIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.StopIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.CancelIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.NavigateHomeIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.FallbackIntent",
+          "samples": []
+        }
       ],
       "types": [
         {
           "name": "PotionType",
           "values": [
-            { "id": "skill", "name": { "value": "skill", "synonyms": ["skills", "dexterity"] } },
-            { "id": "strength", "name": { "value": "strength", "synonyms": ["stamina", "health", "healing"] } },
-            { "id": "fortune", "name": { "value": "fortune", "synonyms": ["good fortune"] } }
+            {
+              "id": "skill",
+              "name": {
+                "value": "skill",
+                "synonyms": [
+                  "skills",
+                  "dexterity"
+                ]
+              }
+            },
+            {
+              "id": "strength",
+              "name": {
+                "value": "strength",
+                "synonyms": [
+                  "stamina",
+                  "health",
+                  "healing"
+                ]
+              }
+            },
+            {
+              "id": "fortune",
+              "name": {
+                "value": "fortune",
+                "synonyms": [
+                  "good fortune"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "ChoiceType",
+          "values": [
+            {
+              "id": "left",
+              "name": {
+                "value": "left"
+              }
+            },
+            {
+              "id": "right",
+              "name": {
+                "value": "right"
+              }
+            },
+            {
+              "id": "north",
+              "name": {
+                "value": "north"
+              }
+            },
+            {
+              "id": "south",
+              "name": {
+                "value": "south"
+              }
+            },
+            {
+              "id": "east",
+              "name": {
+                "value": "east"
+              }
+            },
+            {
+              "id": "west",
+              "name": {
+                "value": "west"
+              }
+            },
+            {
+              "id": "forward",
+              "name": {
+                "value": "forward"
+              }
+            },
+            {
+              "id": "back",
+              "name": {
+                "value": "back"
+              }
+            },
+            {
+              "id": "up",
+              "name": {
+                "value": "up"
+              }
+            },
+            {
+              "id": "down",
+              "name": {
+                "value": "down"
+              }
+            },
+            {
+              "id": "straight on",
+              "name": {
+                "value": "straight on"
+              }
+            },
+            {
+              "id": "the door",
+              "name": {
+                "value": "the door"
+              }
+            },
+            {
+              "id": "the stairs",
+              "name": {
+                "value": "the stairs"
+              }
+            },
+            {
+              "id": "the passage",
+              "name": {
+                "value": "the passage"
+              }
+            },
+            {
+              "id": "the tunnel",
+              "name": {
+                "value": "the tunnel"
+              }
+            },
+            {
+              "id": "the key",
+              "name": {
+                "value": "the key"
+              }
+            },
+            {
+              "id": "the chest",
+              "name": {
+                "value": "the chest"
+              }
+            }
           ]
         }
       ]

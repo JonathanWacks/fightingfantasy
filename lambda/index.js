@@ -8,7 +8,7 @@
  */
 
 const Alexa = require('ask-sdk-core');
-const { handle } = require('./engine');
+const { handle, choiceEntities } = require('./engine');
 const adventure = require('./adventure');
 
 const STATE_KEY = 'game';
@@ -84,7 +84,26 @@ function slotValue(handlerInput, name) {
   return slot.value || null;
 }
 
+/**
+ * For MakeChoiceIntent: the raw words, plus the option id when Alexa matched one of
+ * the dynamic entities we sent for the current choices.
+ */
+function choiceSlot(handlerInput) {
+  const slot = Alexa.getSlot(handlerInput.requestEnvelope, 'choice');
+  if (!slot) return { text: null, id: null };
+  const authorities = (slot.resolutions && slot.resolutions.resolutionsPerAuthority) || [];
+  let id = null;
+  authorities.forEach((auth) => {
+    const dynamic = String(auth.authority || '').indexOf('.dynamic.') !== -1;
+    if (!id && dynamic && auth.status && auth.status.code === 'ER_SUCCESS_MATCH' && auth.values && auth.values.length) {
+      id = auth.values[0].value.id;
+    }
+  });
+  return { text: slot.value || null, id: id };
+}
+
 const INTENT_ACTIONS = {
+  OptionsIntent: 'options',
   AttackIntent: 'attack',
   EscapeIntent: 'escape',
   TestLuckIntent: 'luck',
@@ -117,6 +136,10 @@ function toAction(handlerInput) {
     const n = parseInt(slotValue(handlerInput, 'number'), 10);
     return Number.isNaN(n) ? { type: 'unknown' } : { type: 'choose', n };
   }
+  if (intent === 'MakeChoiceIntent') {
+    const c = choiceSlot(handlerInput);
+    return c.text || c.id ? { type: 'say', text: c.text || '', id: c.id } : { type: 'unknown' };
+  }
   if (intent === 'ChoosePotionIntent') {
     const which = (slotValue(handlerInput, 'potion') || '').toLowerCase();
     return which ? { type: 'potion', which } : { type: 'unknown' };
@@ -143,12 +166,30 @@ const GameHandler = {
   },
 };
 
+/**
+ * Tell Alexa which phrases name the current choices, so "the torchlight" or
+ * "go left" resolves to an option. Cleared when there is nothing to choose.
+ */
+function dynamicEntitiesDirective(state) {
+  const values = choiceEntities(state);
+  if (!values.length) return { type: 'Dialog.UpdateDynamicEntities', updateBehavior: 'CLEAR' };
+  return {
+    type: 'Dialog.UpdateDynamicEntities',
+    updateBehavior: 'REPLACE',
+    types: [{ name: 'ChoiceType', values: values }],
+  };
+}
+
 function respondWith(handlerInput, result) {
   const rb = handlerInput.responseBuilder
     .speak(toSsml(result.speech))
     .withSimpleCard(adventure.title, result.speech.replace(/\n\n/g, '\n'));
-  if (!result.shouldEnd) rb.reprompt(toSsml(result.reprompt));
-  else rb.withShouldEndSession(true);
+  if (!result.shouldEnd) {
+    rb.reprompt(toSsml(result.reprompt));
+    rb.addDirective(dynamicEntitiesDirective(result.state));
+  } else {
+    rb.withShouldEndSession(true);
+  }
   return rb.getResponse();
 }
 
@@ -185,4 +226,4 @@ function buildSkill() {
 }
 
 exports.handler = buildSkill().lambda();
-exports._internal = { toAction, toSsml, buildSkill };
+exports._internal = { toAction, toSsml, buildSkill, dynamicEntitiesDirective };

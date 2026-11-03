@@ -6,9 +6,11 @@
  *   handle(state, action, rng) -> { state, speech, reprompt, shouldEnd }
  *
  * `state` is a plain JSON object (safe to persist). `action` is one of:
- *   launch | new | yes | no | continue | choose{n} | attack | escape | luck
- *   eat | drink | potion{which} | reroll | status | inventory | repeat | help
- *   stop | unknown
+ *   launch | new | yes | no | continue | choose{n} | say{text, id} | options
+ *   attack | escape | luck | eat | drink | potion{which} | reroll | status
+ *   inventory | repeat | help | stop | unknown
+ * `say` is free speech ("go left", "the iron door"); `id` is an Alexa
+ * dynamic-entity id ("opt2") when Alexa resolved one.
  * `rng` returns a float in [0, 1); injectable for tests.
  *
  * Speech uses blank lines ("\n\n") between paragraphs; the Alexa layer turns
@@ -16,6 +18,8 @@
  */
 
 const defaultAdventure = require('./adventure');
+const { matchChoice, entitiesFor } = require('./choices');
+const { parseUtterance } = require('./textInput');
 
 const STATE_VERSION = 1;
 const NUMBER_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
@@ -25,6 +29,12 @@ const POTIONS = {
   fortune: 'the potion of fortune, which restores your luck and raises it by one',
 };
 const POTION_ORDER = ['skill', 'strength', 'fortune'];
+// When an action intent arrives while the player is choosing a path, try it as words.
+const CHOICE_WORDS = {
+  attack: 'attack fight',
+  escape: 'escape run flee',
+  continue: 'go on keep going carry on move on',
+};
 
 const d6 = (rng) => 1 + Math.floor(rng() * 6);
 const roll2 = (rng) => d6(rng) + d6(rng);
@@ -88,10 +98,14 @@ function createEngine(adventure = defaultAdventure) {
   // ---------- prompts ----------
 
   function choicePrompt(s) {
+    const choices = visibleChoices(s).map((c) => c.text);
+    return `Will you ${listOr(choices)}?`;
+  }
+
+  function numberedOptions(s) {
     const choices = visibleChoices(s);
-    if (choices.length === 1) return `To ${choices[0].text}, say one.`;
-    const parts = choices.map((c, i) => (i === 0 ? `Say ${word(i + 1)} to ${c.text}` : `${word(i + 1)} to ${c.text}`));
-    return `${listOr(parts)}.`;
+    return choices.map((c, i) => `Option ${word(i + 1)}: ${c.text}.`).join(' ') +
+      ' Answer in your own words, or say the number.';
   }
 
   function combatPrompt(s) {
@@ -397,7 +411,11 @@ function createEngine(adventure = defaultAdventure) {
           prompt(s),
         ];
       case 'section':
-        return ['Choose what to do by saying the number of an option.', general, prompt(s)];
+        return [
+          'Say what you want to do in your own words, like "take the left passage", or say the number of an option. ' +
+            'Say "what are my options" to hear them numbered.',
+          general, prompt(s),
+        ];
       default:
         return ['Say new game to create an adventurer and begin.'];
     }
@@ -462,8 +480,24 @@ function createEngine(adventure = defaultAdventure) {
       delete s.awaitingResume; // any other command just resumes and is handled below
     }
 
+    // Free speech outside a choice: treat it like a typed command ("strength", "attack it").
+    if (a.type === 'say' && !(s.phase === 'section' && !section(s.section).next)) {
+      const parsed = parseUtterance(a.text || '');
+      return handle(prev, parsed.type === 'say' ? { type: 'unknown' } : parsed, rng);
+    }
+
+    // While choosing a path, "fight" or "go on" usually arrive as the Attack or Continue
+    // commands; if they clearly name one of the choices, take that choice.
+    if (CHOICE_WORDS[a.type] && s.phase === 'section' && !section(s.section).next) {
+      const m = matchChoice(visibleChoices(s), CHOICE_WORDS[a.type]);
+      if (m && m.index !== undefined) return respond(s, enter(s, visibleChoices(s)[m.index].to));
+    }
+
     // Commands that work in any phase.
     switch (a.type) {
+      case 'options':
+        if (!(s.phase === 'section' && !section(s.section).next)) return respond(s, [prompt(s)], { noRemember: true });
+        break;
       case 'repeat':
         return respond(s, [s.lastSpeech || prompt(s)], { reprompt: s.lastReprompt });
       case 'help':
@@ -503,7 +537,10 @@ function createEngine(adventure = defaultAdventure) {
         if (which && POTIONS[which]) {
           s.potion = which;
           s.potionDoses = 2;
-          const out = [`You take the potion of ${which}. Now, your adventure begins.`];
+          const out = [
+            `You take the potion of ${which}. When you have a choice to make, answer in your own words, ` +
+              'or say the number of the option. Now, your adventure begins.',
+          ];
           return respond(s, enter(s, adventure.start, out));
         }
         break;
@@ -511,13 +548,32 @@ function createEngine(adventure = defaultAdventure) {
 
       case 'section': {
         const sec = section(s.section);
-        if (sec.next && (a.type === 'continue' || a.type === 'yes' || (a.type === 'choose' && a.n === 1))) {
-          return respond(s, enter(s, sec.next));
+        if (sec.next) {
+          if (['continue', 'yes', 'choose'].indexOf(a.type) !== -1) return respond(s, enter(s, sec.next));
+          break;
         }
-        if (a.type === 'choose' && !sec.next) {
-          const choices = visibleChoices(s);
+        const choices = visibleChoices(s);
+        if (a.type === 'options') return respond(s, [numberedOptions(s)], { noRemember: true });
+        if (a.type === 'choose') {
           if (a.n >= 1 && a.n <= choices.length) return respond(s, enter(s, choices[a.n - 1].to));
-          return respond(s, [`There is no option ${a.n}.`, prompt(s)], { noRemember: true });
+          return respond(s, [`There is no option ${a.n}.`, numberedOptions(s)], { noRemember: true });
+        }
+        if (a.type === 'yes' && choices.length === 1) return respond(s, enter(s, choices[0].to));
+        if (a.type === 'say') {
+          const m = matchChoice(choices, a.text, a.id);
+          if (m && m.index !== undefined) return respond(s, enter(s, choices[m.index].to));
+          if (m && m.ambiguous && m.ambiguous.every((i) => choices[i].to === choices[m.ambiguous[0]].to)) {
+            return respond(s, enter(s, choices[m.ambiguous[0]].to));
+          }
+          if (m && m.ambiguous) {
+            const which = m.ambiguous.map((i) => choices[i].text);
+            return respond(s, [`Do you mean ${listOr(which)}?`], { noRemember: true, reprompt: numberedOptions(s) });
+          }
+          if (a.type === 'say') {
+            const parsed = parseUtterance(a.text || '');
+            if (parsed.type !== 'say' && parsed.type !== 'unknown') return handle(prev, parsed, rng);
+          }
+          return respond(s, ['Sorry, I\u2019m not sure which you mean.', numberedOptions(s)], { noRemember: true });
         }
         break;
       }
@@ -571,7 +627,13 @@ function createEngine(adventure = defaultAdventure) {
     return respond(s, [sorry, prompt(s)], { noRemember: true });
   }
 
-  return { handle, prompt, visibleChoices, newCharacter, enter, STATE_VERSION };
+  /** Dynamic entities for the choices the player can make right now (empty if none). */
+  function choiceEntities(s) {
+    if (!s || s.phase !== 'section' || s.awaitingResume || section(s.section).next) return [];
+    return entitiesFor(visibleChoices(s));
+  }
+
+  return { handle, prompt, visibleChoices, choiceEntities, newCharacter, enter, STATE_VERSION };
 }
 
 module.exports = Object.assign({ createEngine: createEngine }, createEngine());

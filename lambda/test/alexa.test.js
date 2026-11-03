@@ -30,12 +30,15 @@ function envelope(request, sessionAttributes = {}, isNew = false) {
   };
 }
 
-const intent = (name, slots = {}) => ({
+const intent = (name, slots = {}, resolutions = {}) => ({
   type: 'IntentRequest',
   intent: {
     name,
     confirmationStatus: 'NONE',
-    slots: Object.fromEntries(Object.entries(slots).map(([k, v]) => [k, { name: k, value: v, confirmationStatus: 'NONE' }])),
+    slots: Object.fromEntries(Object.entries(slots).map(([k, v]) => [k, Object.assign(
+      { name: k, value: v, confirmationStatus: 'NONE' },
+      resolutions[k] ? { resolutions: { resolutionsPerAuthority: resolutions[k] } } : {},
+    )])),
   },
 });
 
@@ -57,6 +60,30 @@ test('full voice flow through the Alexa handler', async () => {
   assert.match(r.ssml, /potion of fortune/);
   assert.equal(r.attrs.game.section, 1);
 
+  const directive = r.res.response.directives.find((d) => d.type === 'Dialog.UpdateDynamicEntities');
+  assert.equal(directive.updateBehavior, 'REPLACE');
+  assert.equal(directive.types[0].name, 'ChoiceType');
+  assert.deepEqual(directive.types[0].values.map((v) => v.id), ['opt1', 'opt2']);
+
+  // Alexa resolved "the crack" to our second dynamic entity.
+  r = await say(intent('MakeChoiceIntent', { choice: 'the crack' }, {
+    choice: [
+      { authority: 'amzn1.er-authority.echo-sdk.amzn1.ask.skill.test.ChoiceType', status: { code: 'ER_SUCCESS_NO_MATCH' } },
+      { authority: 'amzn1.er-authority.echo-sdk.dynamic.amzn1.ask.skill.test.ChoiceType', status: { code: 'ER_SUCCESS_MATCH' },
+        values: [{ value: { id: 'opt2', name: 'climb the scree towards the crack' } }] },
+    ],
+  }), r.attrs);
+  assert.equal(r.attrs.game.phase, 'test');
+  assert.equal(r.res.response.directives[0].updateBehavior, 'CLEAR');
+
+  // Start again at section 1 and answer with plain words and with a number.
+  r.attrs.game.section = 1;
+  r.attrs.game.phase = 'section';
+  r = await say(intent('MakeChoiceIntent', { choice: 'squeeze through the door' }), r.attrs);
+  assert.equal(r.attrs.game.section, 2);
+  r = await say(intent('OptionsIntent'), r.attrs);
+  assert.match(r.ssml, /Option one: take the damp left passage/);
+  r.attrs.game.section = 1;
   r = await say(intent('ChooseOptionIntent', { number: '1' }), r.attrs);
   assert.equal(r.attrs.game.section, 2);
 
@@ -68,6 +95,7 @@ test('full voice flow through the Alexa handler', async () => {
 
   r = await say(intent('AMAZON.StopIntent'), r.attrs);
   assert.equal(r.res.response.shouldEndSession, true);
+  assert.equal((r.res.response.directives || []).length, 0);
 });
 
 test('SSML special characters are escaped', () => {
