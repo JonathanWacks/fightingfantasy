@@ -6,7 +6,10 @@ Everything here is generated from scratch (sine waves, noise, envelopes), so the
 files are original and free to use. Replace any of them with a real recording of
 the same name if you prefer: Alexa needs MP3, 48 kbps, 16/22.05/24 kHz.
 
-Usage:  python3 tools/make_sounds.py        (writes audio/*.mp3; needs numpy, scipy, ffmpeg)
+Usage:  python3 tools/make_sounds.py                 (regenerates every audio/*.mp3)
+        python3 tools/make_sounds.py door_creak wolf (regenerates only those)
+Needs numpy, scipy and ffmpeg. Each sound has its own random seed, so
+regenerating one never changes another.
 """
 import os
 import subprocess
@@ -18,7 +21,7 @@ from scipy.signal import butter, sosfilt, fftconvolve
 
 SR = 24000
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'audio')
-rng = np.random.default_rng(1986)
+rng = np.random.default_rng(1986)  # reseeded per sound in __main__
 
 
 # ---------- building blocks ----------
@@ -253,12 +256,34 @@ def s_blast():
 
 
 def creak(dur, base=70):
+    """
+    Stick-slip friction: a train of separate clicks whose rate wanders (slow clicks
+    read as a creak, faster ones as a squeal), each ringing woody resonances.
+    No low end, so it never turns into a buzz.
+    """
     n = int(dur * SR)
-    wobble = base * (1 + 0.35 * np.sin(2 * np.pi * 0.7 * t(dur)) + 0.15 * lowpass(noise(dur), 6) * 20)
-    wobble = np.clip(wobble, 30, 220)
-    pulses = saw(wobble, dur) * (0.6 + 0.4 * np.abs(lowpass(noise(dur), 12)) * 8)
-    x = band(pulses, 600, 3000) + 0.4 * band(pulses, 150, 600)
-    return np.tanh(x * 1.5) * np.sin(np.pi * np.linspace(0, 1, n)) ** 0.6
+    tt = t(dur)
+    # rate contour: wanders between groaning clicks and a tighter squeal
+    wander = lowpass(noise(dur), 3) * 40
+    rate = base * (0.7 + 0.6 * np.sin(np.pi * tt / dur) + 0.35 * np.sin(2 * np.pi * 0.9 * tt) + wander)
+    rate = np.clip(rate, 12, 260)
+    pulses = np.zeros(n)
+    pos = 0.0
+    while True:
+        i = int(pos)
+        if i >= n:
+            break
+        pulses[i] = rng.uniform(0.4, 1.0)
+        pos += SR / rate[i] * rng.uniform(0.85, 1.15)
+    # stick-slip comes in bursts, not a steady drone
+    bursts = np.clip(0.35 + lowpass(noise(dur), 5) * 25, 0, 1)
+    pulses *= bursts
+    # woody resonances (narrow bands), slightly detuned over time by the pulse rate
+    body = (band(pulses, 650, 760, 2) * 1.0 + band(pulses, 1050, 1250, 2) * 0.9 +
+            band(pulses, 1700, 1950, 2) * 0.7 + band(pulses, 2600, 3000, 2) * 0.45 +
+            band(pulses, 3800, 4400, 2) * 0.2)
+    body = highpass(body, 450, 4)
+    return body * np.sin(np.pi * np.linspace(0, 1, n)) ** 0.4
 
 
 def s_door_creak():
@@ -271,7 +296,9 @@ def s_door_creak_long():
 
 def s_door_open():
     click = highpass(noise(0.04), 1500) * env(int(0.04 * SR), 0.001, 0.01)
-    return reverb(place(1.4, [(0, click, 0.8), (0.1, creak(1.0, 110), 0.6)]), 0.6, 0.2)
+    c = creak(1.0, 110)
+    c = c / (np.max(np.abs(c)) + 1e-9)
+    return reverb(place(1.4, [(0, click, 0.35), (0.1, c, 0.9)]), 0.6, 0.2)
 
 
 def s_door_shut():
@@ -433,7 +460,14 @@ def write_mp3(name, x):
 
 
 if __name__ == '__main__':
+    import sys
+    import zlib
     os.makedirs(OUT, exist_ok=True)
-    for name, fn in sorted(SOUNDS.items()):
-        path = write_mp3(name, fn())
+    wanted = sys.argv[1:] or sorted(SOUNDS)
+    unknown = [w for w in wanted if w not in SOUNDS]
+    if unknown:
+        sys.exit('unknown sound(s): ' + ', '.join(unknown) + '\navailable: ' + ', '.join(sorted(SOUNDS)))
+    for name in wanted:
+        rng = np.random.default_rng(zlib.crc32(name.encode()))
+        path = write_mp3(name, SOUNDS[name]())
         print(f'{name:16s} {os.path.getsize(path) / 1024:6.1f} KB')
