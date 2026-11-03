@@ -15,7 +15,7 @@
 // Pinned to the commit that added these files, so the CDN serves exactly them.
 // When you change the sounds, commit and push, then put the new commit ID here
 // (a tag such as @sounds-v2 works too).
-const DEFAULT_BASE = 'https://cdn.jsdelivr.net/gh/JonathanWacks/fightingfantasy@98a667b83037cef8b6ffbddeaa6ddbe5f32ab9de/audio/';
+const DEFAULT_BASE = 'https://cdn.jsdelivr.net/gh/JonathanWacks/fightingfantasy@1b777212ac8add2f6a2aa3c9a0a050c860444998/audio/';
 
 const SOUND_FILES = [
   'battle', 'bell', 'blast', 'clash', 'darts', 'death', 'door_creak', 'door_creak_long',
