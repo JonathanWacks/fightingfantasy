@@ -42,7 +42,14 @@ Alexa-hosted skills come with an S3 bucket (`S3_PERSISTENCE_BUCKET`), which the 
 
 The story is read by a narrator voice: Amazon Polly's **Brian**, set by `narrator` in `adventure.js`. Characters can speak in voices of their own; in Ashen Tor the ferryman and Malgrath do. To go back to Alexa's own voice, set `narrator: 'Alexa'`, or add a `NARRATOR_VOICE` environment variable to the Lambda.
 
-The engine plays sound effects from the Alexa Skills Kit Sound Library on game events. For example, there's a drum roll before every luck or skill test, a chime when you're lucky, a swish and thud each combat round, a bugle when you win and a tolling bell when you die. Sections can add their own sound and mood. All the sounds are listed in `lambda/sounds.js`, and you can swap any of them. To hear one first, paste `<speak><audio src="soundbank://soundlibrary/..."/></speak>` into the Test tab. Set an `EVENTS` entry to `null` to silence that event.
+The engine plays sound effects on game events. For example, there's a drum roll before every luck or skill test, a chime when you're lucky, a swish and thud each combat round, a bugle when you win and a tolling bell when you die. Sections can add their own sound and mood.
+
+The sounds are MP3s in `audio/`. They're synthesised from scratch by `tools/make_sounds.py`, so they're original and free to use. They are served from the jsDelivr CDN, which mirrors this public repo, pinned to the `sounds-v1` tag. To check one, open https://cdn.jsdelivr.net/gh/JonathanWacks/fightingfantasy@sounds-v1/audio/door_creak.mp3 in a browser.
+
+- **Swap a sound** by replacing its file with a real recording of the same name. Alexa needs MP3 at 48 kbps and 24 kHz, for example: `ffmpeg -i in.wav -ac 1 -ar 24000 -b:a 48k audio/door_creak.mp3`. Then commit, push a new tag (`git tag sounds-v2 && git push --tags`), and update `DEFAULT_BASE` in `lambda/sounds.js`.
+- **Serve them from somewhere else** by setting the `SOUND_BASE_URL` environment variable, for example to your own S3 bucket.
+- **Use Amazon's Sound Library** by putting a `soundbank://` URL in the adventure's `sounds` map.
+- **Silence an event** by setting its `EVENTS` entry in `sounds.js` to `null`.
 
 Alexa plays at most five sound clips in one response, so the renderer stops adding clips after the fifth.
 
@@ -66,7 +73,10 @@ lambda/
   engine.js       the game rules — pure logic, no Alexa code
   choices.js      matching spoken answers to choices; dynamic-entity values
   markup.js       sound / mood / voice tags, rendered to SSML (or plain text)
-  sounds.js       sound-effect names and the sounds played on game events
+  sounds.js       sound-effect names, where they're served from, and game-event sounds
+audio/            the sound effects (MP3, Alexa format)
+tools/
+  make_sounds.py  regenerates audio/ (needs Python with numpy and scipy, plus ffmpeg)
   adventure.js    the story: numbered sections, choices, fights, tests
   validate.js     checks the story for broken links and dead ends
   play.js         play in a terminal using the same engine
@@ -102,7 +112,7 @@ Sound, mood and character voices:
 
 ```js
 {
-  sound: 'door_creak',                      // played on arrival (names in sounds.js, or a soundbank:// URL)
+  sound: 'door_creak',                      // played on arrival (names in sounds.js, or a full URL)
   mood: 'whisper',                          // whisper | dread | tense | quiet | triumph
   text: [
     'He holds out a bony hand, and rasps:',
@@ -111,7 +121,7 @@ Sound, mood and character voices:
 }
 ```
 
-At the top of the adventure, `narrator: 'Brian'` and `voices: { ferryman: { name: 'Russell', rate: '85%' } }` choose the Polly voices; `sounds: { name: 'soundbank://…' }` adds your own sound names. The validator checks that every sound, mood and voice you use exists.
+At the top of the adventure, `narrator: 'Brian'` and `voices: { ferryman: { name: 'Russell', rate: '85%' } }` choose the Polly voices; `sounds: { name: 'https://…' }` adds your own sound names. The validator checks that every sound, mood and voice you use exists.
 
 Effects: `{ stamina: -3 }`, `{ skill: 1, raiseInitial: true }`, `{ luck: 1 }`, `{ gold: 5 }`, `{ provisions: 2 }`, `{ addItem: 'rope' }`, `{ removeItem: 'holy water' }`, `{ setFlag: 'armoury' }`.
 

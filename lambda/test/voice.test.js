@@ -5,7 +5,9 @@ const assert = require('node:assert/strict');
 const adventure = require('../adventure');
 const { handle, visibleChoices } = require('../engine');
 const { toSsml, toPlain, sectionText, MAX_AUDIO } = require('../markup');
-const { SOUNDS, EVENTS, soundUrl } = require('../sounds');
+const fs = require('fs');
+const path = require('path');
+const { SOUND_FILES, EVENTS, soundUrl } = require('../sounds');
 
 const opts = { narrator: 'Brian', voices: adventure.voices, sounds: adventure.sounds };
 
@@ -20,7 +22,7 @@ function checkSsml(ssml) {
     if (tag === 'audio') {
       audio += 1;
       assert.ok(!stack.includes('voice'), 'audio must not be inside a voice tag');
-      assert.match(attrs, /src="soundbank:\/\/soundlibrary\/[a-z_]+\/[a-z0-9_]+"/);
+      assert.match(attrs, /src="https:\/\/cdn\.jsdelivr\.net\/gh\/JonathanWacks\/fightingfantasy@sounds-v1\/audio\/[a-z_]+\.mp3"/);
     }
     if (selfClose) return '';
     if (close) assert.equal(stack.pop(), tag, `mismatched </${tag}> in ${ssml}`);
@@ -38,16 +40,31 @@ function checkSsml(ssml) {
   return audio;
 }
 
-test('every named sound resolves to a sound library URL', () => {
-  for (const name of Object.keys(SOUNDS)) assert.match(soundUrl(name), /^soundbank:\/\/soundlibrary\//);
-  for (const name of Object.values(EVENTS)) if (name) assert.ok(SOUNDS[name], `event sound ${name}`);
+test('every named sound has an Alexa-ready MP3 in audio/', () => {
+  const dir = path.join(__dirname, '..', '..', 'audio');
+  const files = fs.readdirSync(dir).filter((f) => f.endsWith('.mp3')).map((f) => f.slice(0, -4)).sort();
+  assert.deepEqual(files, SOUND_FILES.slice().sort(), 'audio/ and SOUND_FILES must list the same sounds');
+  for (const name of SOUND_FILES) {
+    assert.match(soundUrl(name), /^https:\/\/.+\/audio\/[a-z_]+\.mp3$/);
+    const head = fs.readFileSync(path.join(dir, name + '.mp3')).subarray(0, 4);
+    // MPEG-2 Layer III frame sync at 24 kHz: 0xFF 0xF3
+    assert.ok(head[0] === 0xff && (head[1] & 0xe0) === 0xe0, `${name}.mp3 is not an MP3`);
+  }
+  for (const name of Object.values(EVENTS)) if (name) assert.ok(SOUND_FILES.includes(name), `event sound ${name}`);
   assert.equal(soundUrl('no_such_sound'), null);
+  assert.equal(soundUrl('soundbank://soundlibrary/x/y'), 'soundbank://soundlibrary/x/y');
+});
+
+test('SOUND_BASE_URL moves where sounds are served from', () => {
+  process.env.SOUND_BASE_URL = 'https://example.org/sfx/';
+  try { assert.equal(soundUrl('wind'), 'https://example.org/sfx/wind.mp3'); }
+  finally { delete process.env.SOUND_BASE_URL; }
 });
 
 test('narration, character voices, moods and sounds render as valid SSML', () => {
   const ssml = toSsml(sectionText(adventure.sections[38]), opts);
   checkSsml(ssml);
-  assert.match(ssml, /^<audio src="soundbank:\/\/soundlibrary\/nature\/amzn_sfx_thunder_rumble_01"\/>/);
+  assert.match(ssml, /^<audio src="https:\/\/cdn\.jsdelivr\.net\/gh\/JonathanWacks\/fightingfantasy@sounds-v1\/audio\/thunder\.mp3"\/>/);
   assert.match(ssml, /<voice name="Brian"><prosody rate="88%">You step into the crypt/);
   assert.match(ssml, /<voice name="Matthew"><prosody rate="80%"><prosody rate="88%">Who wakes me\?/);
   assert.equal(toPlain(sectionText(adventure.sections[38])).indexOf('[['), -1);
